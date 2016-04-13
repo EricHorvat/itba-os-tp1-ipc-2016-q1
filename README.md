@@ -1,18 +1,22 @@
+	::::::::::::::::::::::.      .::::::.     .	..         :.
+	;;;;;;;;'''' `;;;```.;;;    ;;;`    `  .;;;;;;;.      ;;
+	     [[       `]]nnn]]'     '[==/[[[[,,[[     \[[,    [[
+	     $$        $$$""          '''    $$$$,     $$$    $$
+	     88,       888o          88b    dP"888,_ _,88P    88
+	     MMM       YMMMb          "YMmMY"   "YMMMMMP"     MM
 
-     ,-----.,--.                  ,--. ,---.   ,--.,------.  ,------.
-    '  .--./|  | ,---. ,--.,--. ,-|  || o   \  |  ||  .-.  \ |  .---'
-    |  |    |  || .-. ||  ||  |' .-. |`..'  |  |  ||  |  \  :|  `--, 
-    '  '--'\|  |' '-' ''  ''  '\ `-' | .'  /   |  ||  '--'  /|  `---.
-     `-----'`--' `---'  `----'  `---'  `--'    `--'`-------' `------'
-    ----------------------------------------------------------------- 
 
+# TP de Sistemas Operativos 1
 
-Hi there! Welcome to Cloud9 IDE!
+## Servidor FTP
 
-To get you started, create some files, play with the terminal,
-or visit http://docs.c9.io for our documentation.
-If you want, you can also go watch some training videos at
-http://www.youtube.com/user/c9ide.
+### File Structure
 
-Happy coding!
-The Cloud9 IDE team
+	+
+	|__client
+	|__server
+	|__lib
+	   |__sqlite
+	   |__serialization
+	   |__communication
+	   
