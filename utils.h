@@ -18,5 +18,11 @@ typedef unsigned char boolean;
 
 typedef char* string;
 
+#define NEW(type) malloc(sizeof(type))
+
+#define NEWLINE '\n'
+#define ZERO '\0'
+#define SLASH '/'
+#define COLON ':'
 
 #endif
