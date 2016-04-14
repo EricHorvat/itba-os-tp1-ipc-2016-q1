@@ -1,0 +1,4 @@
+# config/public.yaml
+
+incoming_connection_fifo: 'connections.fifo'
+
