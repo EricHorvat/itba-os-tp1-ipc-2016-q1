@@ -3,35 +3,22 @@
 
 #include "comm.errors.h"
 
+typedef enum {
+	ADDRESS_OK = 0,
+	ADDRESS_MISSING_PROTOCOL_TOKEN,
+	ADDRESS_MISSING_PORT_TOKEN,
+	ADDRESS_INVALID_PORT
+} comm_addr_error_t;
+
 typedef struct {
-    char *url;
-    char *protocol;
-//    char *user;
-//    char *pwd;
-    char *host;
-//    unsigned int port;
-    unsigned char valid;
-    unsigned char open;
+	char *url;
+	char *protocol;
+	char *host;
+	unsigned int port;
+	unsigned char valid;
 } comm_addr_t;
 
-unsigned char address_from_url(char *url, comm_addr_t *address);
-
-typedef void (*comm_callback_t)(comm_error_t *err, comm_addr_t *origin, char *response);
-
-
-comm_error_code_t comm_open(comm_addr_t *address);
-#include "comm.send.api.h"
-#include "comm.receive.api.h"
-comm_error_code_t comm_close(comm_addr_t *address);
-
-
-/**
- * 
- * "fd://1"
- * "socket://martin@martin:3000"
- * "pipe://30"
- * 
- **/
+comm_addr_error_t address_from_url(char *url, comm_addr_t *address);
 
 
 #endif
