@@ -70,4 +70,6 @@ Thumbs.db
 *.tar
 *.zip
 
-
+# Logs
+*.out
+*.log
