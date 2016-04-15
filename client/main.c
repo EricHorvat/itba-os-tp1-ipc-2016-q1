@@ -32,7 +32,7 @@ void response_handler(comm_error_t *err, comm_addr_t *addr, char * response) {
  	comm_addr_t *addr;
  	comm_addr_error_t addr_error;
 
- 	addr = (comm_addr_t*)NEW(comm_addr_t);
+ 	addr = NEW(comm_addr_t);
 
  	if ( (addr_error = address_from_url("fd://1:3000", addr)) > 0) {
 

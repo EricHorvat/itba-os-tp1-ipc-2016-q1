@@ -42,7 +42,7 @@ void send_data_async(void * data, unsigned int size, comm_addr_t *addr, comm_cal
 
 	unlink(fifo);
 
-	err = (comm_error_t*)NEW(comm_error_t);
+	err = NEW(comm_error_t);
 	err->code = 0;
 	err->msg = "Operacion Exitosa";
 
