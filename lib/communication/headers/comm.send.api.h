@@ -3,6 +3,8 @@
 
 #include "comm.addr.h"
 
+#include <stdlib.h>
+
 typedef void (*comm_callback_t)(comm_error_t *err, comm_addr_t *origin, char *response);
 
 /**
@@ -12,12 +14,9 @@ typedef void (*comm_callback_t)(comm_error_t *err, comm_addr_t *origin, char *re
  * 
  **/
 
-void send_message(char *message, comm_addr_t *addr, comm_error_t *error);
-void send_data(void *data, unsigned int size, comm_addr_t *addr, comm_error_t *error);
+void comm_send_data(void *data, size_t size, comm_addr_t *addr, comm_error_t *error);
 
-
-void send_message_async(char *message, comm_addr_t *addr, comm_callback_t cb);
-void send_data_async(void * data, unsigned int size, comm_addr_t *addr, comm_callback_t cb);
+void comm_send_data_async(void * data, size_t size, comm_addr_t *addr, comm_callback_t cb);
 
 #endif
 

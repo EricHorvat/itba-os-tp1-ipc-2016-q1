@@ -7,7 +7,9 @@
 
 void response_handler(comm_error_t *err, comm_addr_t *addr, char * response) {
 
-	printf("%s dice: %s\n", addr->url, response);
+	// printf("%s dice: %s\n", addr->url, response);
+
+	printf("response: %s\n", response);
 
 }
 
@@ -52,5 +54,7 @@ void response_handler(comm_error_t *err, comm_addr_t *addr, char * response) {
  	printf("Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", addr->protocol, addr->host, addr->port);
 
  	send_int_async(3, addr, &response_handler);
+
+ 	printf("Something\n");
 
  }

@@ -10,7 +10,8 @@ typedef enum {
 } connection_state_t;
 
 typedef struct {
-	comm_addr_t addr;
+	comm_addr_t *addr;
+	char *connection_file;
 	connection_state_t status;
 } connection_t;
 
