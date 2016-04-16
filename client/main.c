@@ -29,16 +29,25 @@ void response_handler(comm_error_t *err, comm_addr_t *addr, char * response) {
 
  int main (int argc, char **argv) {
 
+ 	connection_t *connection;
+
  	comm_addr_t *addr;
  	comm_addr_error_t addr_error;
 
+
+ 	connection = NEW(connection_t);
  	addr = NEW(comm_addr_t);
 
- 	if ( (addr_error = address_from_url("fd://1:3000", addr)) > 0) {
+ 	connection->addr = addr;
+ 	connection->connection_file = "server_incoming_connections.fifo";
+
+ 	if ( (addr_error = address_from_url("fd://www.google.com:3000", addr)) > 0) {
 
  		printf("Error %d\n", addr_error);
  		return addr_error;
  	}
+
+ 	comm_open(connection);
 
  	printf("Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", addr->protocol, addr->host, addr->port);
 
