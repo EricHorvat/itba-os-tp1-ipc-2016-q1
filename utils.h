@@ -16,6 +16,9 @@ typedef unsigned char boolean;
 #define yes 1
 #define no 0
 
+#define null NULL
+#define nil NULL
+
 typedef char* string;
 
 #define NEW(type) (type*)malloc(sizeof(type))
