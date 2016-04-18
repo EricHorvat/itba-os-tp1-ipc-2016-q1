@@ -34,29 +34,33 @@ comm_error_code_t comm_open(connection_t *comm) {
 	strcat(fifo, comm->connection_file);
 
 	printf("Creating FIFO\n");
-	if (mkfifo(fifo, FIFO_PERMS) != -1) {
-		printf("Opening FIFO\n");
-		if ( (fd = open(fifo, O_WRONLY|O_NONBLOCK)) != -1 ) {
-		
-			printf("Writing FIFO\n");
-			printf("Writing ");
-			while (*write_ptr != '\0') {
-				putchar(*write_ptr);
-				write(fd, write_ptr, 1);
-				write_ptr++;
-			}
-			
-			// write(fd, comm->addr->host, strlen(comm->addr->host));
+	if (access(fifo, FIFO_PERMS) == -1) {
 
-			close(fd);
-
-			unlink(fifo);
-		} else {
+		if (mkfifo(fifo, FIFO_PERMS) == -1) {
 			return -1;
 		}
-	} else {
-		return -1;
+		printf("FIFO already created\n");
+
 	}
+
+	printf("Opening FIFO\n");
+	if ( (fd = open(fifo, O_WRONLY|O_NONBLOCK)) == -1 ) {
+		return -1;
+	} else 
+	
+	printf("Writing FIFO\n");
+	printf("Writing ");
+	while (*write_ptr != '\0') {
+		putchar(*write_ptr);
+		write(fd, write_ptr, 1);
+		write_ptr++;
+	}
+	
+	// write(fd, comm->addr->host, strlen(comm->addr->host));
+
+	close(fd);
+
+	unlink(fifo);
 
 	return 0;
 }
