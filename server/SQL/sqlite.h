@@ -13,6 +13,19 @@
 
 #define MAX_COLUMNS 10
 
+#define WHERE_LENGTH 894 /*1024-128*/
+
+/*ERRORS*/
+#define NO_QUERY_ERROR 0
+
+#define NULL_QUERY 1001
+
+#define NO_TABLE 1002
+
+#define NO_ATRIBUTE_NOR_VALUE 1003
+/*END ERRORS */
+
+
 typedef struct{
 	sqlite3 * db;
 } connection;
