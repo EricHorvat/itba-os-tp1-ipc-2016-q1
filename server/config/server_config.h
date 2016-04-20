@@ -4,7 +4,7 @@
 #define DEFAULT_CONFIG_FILE "server/config/config.yaml"
 #define READ_PERMS "r"
 
-#define INCOMING_CONNECTIONS_FIFO "server_incoming_connections.fifo"
+#define INCOMING_CONNECTIONS_FIFO "/tmp/server_incoming_connections.fifo"
 
 typedef struct {
 	char *connection_queue;

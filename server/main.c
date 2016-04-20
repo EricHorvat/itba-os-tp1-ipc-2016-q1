@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <ctype.h>
@@ -10,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
 
 #include <config/server_config.h>
 
@@ -52,15 +52,19 @@ static char* process_arguments(int argc, char **argv) {
 	return config_file_opt;
 }
 
-static void incoming_connections_loop() {
+static int incoming_connections_loop() {
 
-	char *fifo = "/tmp/google.req";
-	char *buffer = (char*)malloc(2048);
+	char *fifo = INCOMING_CONNECTIONS_FIFO;
+	char *buffer;
 	size_t read_bytes = 0;
 	int fd;
+
+	buffer = (char*)malloc(2048);
+
+	memset(buffer, ZERO, 2048);
 	
 	if (access(fifo, F_OK) == -1) {
-
+		// file does not exist ==> create file
 		if (mkfifo(fifo, 0666) == -1) {
 			
 			return 3;
@@ -70,7 +74,7 @@ static void incoming_connections_loop() {
 
 	if ( (fd = open(fifo, O_RDONLY)) == -1) {
 
-		printf("[thread] FIFO could not be written\n");
+		printf("FIFO could not be read\n");
 
 		unlink(fifo);
 
@@ -106,6 +110,17 @@ static void incoming_connections_loop() {
 		 *
 		 */
 
+		while ( *(buffer+read_bytes) != '\n') {
+			read(fd, buffer+read_bytes, 1);
+		 	read_bytes++;
+		}
+
+		// en buffer esta el hostname del que me quiere hablar
+
+		printf("%s wants to send something\n", buffer);
+
+		buffer[0] = '\0';
+		read_bytes = 0;
 	}
 
 	
@@ -130,7 +145,7 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
-	incoming_connections_loop();
+	while (incoming_connections_loop() > 0);
 
 	return 0;
 }
