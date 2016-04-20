@@ -1,4 +1,4 @@
-#include "./headers/comm.send.api.h"
+#include <comm.send.api.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -9,18 +9,50 @@
 #include <string.h>
 #include <errno.h>
 #include <poll.h>
+// https://gist.github.com/jbenet/1087739
 #include <time.h>
+#include <sys/time.h>
+#ifdef __MACH__
+#include <mach/clock.h>
+#include <mach/mach.h>
+#include <glib.h>
+// http://cursuri.cs.pub.ro/~apc/2003/resources/pthreads/uguide/users-77.htm
+pthread_cond_t done  = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t calculating = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+void current_utc_time(struct timespec *ts) {
+
+#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	ts->tv_sec = mts.tv_sec;
+	ts->tv_nsec = mts.tv_nsec;
+#else
+	clock_gettime(CLOCK_REALTIME, ts);
+#endif
+
+}
 
 #include <pthread.h>
 
-#include "../../utils.h"
+#include <utils.h>
 
-#include "headers/comm.fifo.h"
+#include <comm.fifo.h>
 
 typedef struct {
 	comm_callback_t cb;
-	comm_addr_t* addr;
+	comm_addr_t* origin;
+	comm_addr_t* endpoint;
 } comm_thread_info_t;
+
+typedef struct {
+	int fd;
+	char *fifo;
+} comm_data_writer_ret_t;
 
 static void *data_listener(void *);
 
@@ -39,12 +71,12 @@ static void *data_listener(void *data) {
 	buffer[0] = 'c';
 	err = NEW(comm_error_t);
 
-	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(info->addr->host)+sizeof(FIFO_RESPONSE_EXTENSION));
+	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(info->origin->host)+sizeof(FIFO_RESPONSE_EXTENSION));
 
 	if (!fifo) {
 		err->code = 1;
 		err->msg = "[thread] FIFO could not be allocated";
-		info->cb(err, info->addr, NULL);
+		info->cb(err, info->endpoint, NULL);
 
 		pthread_exit(NULL);
 
@@ -53,16 +85,14 @@ static void *data_listener(void *data) {
 
 	printf("[thread] Writing FIFO\n");
 
-	strcat(fifo, FIFO_PATH_PREFIX);
-	strcat(fifo, info->addr->host);
-	strcat(fifo, FIFO_RESPONSE_EXTENSION);
+	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION);
 
 	if (access(fifo, F_OK) == -1) {
 
 		err->code = 2;
 		err->msg = "[thread] Response FIFO not found";
 
-		info->cb(err, info->addr, NULL);
+		info->cb(err, info->endpoint, NULL);
 
 		pthread_exit(NULL);
 
@@ -75,7 +105,7 @@ static void *data_listener(void *data) {
 		unlink(fifo);
 		err->code = 2;
 		err->msg = "[thread] FIFO could not be written";
-		info->cb(err, info->addr, NULL);
+		info->cb(err, info->endpoint, NULL);
 
 		pthread_exit(NULL);
 
@@ -95,7 +125,7 @@ static void *data_listener(void *data) {
 	err->code = 0;
 	err->msg = "Operacion Exitosa";
 
-	info->cb(err, info->addr, buffer);
+	info->cb(err, info->endpoint, buffer);
 
 	pthread_exit(NULL);
 
@@ -103,53 +133,41 @@ static void *data_listener(void *data) {
 
 }
 
-void comm_send_data(void *data, size_t size, comm_addr_t *addr, comm_error_t *error) {
+void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 
 }
-
-pthread_mutex_t calculating = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t done = PTHREAD_COND_INITIALIZER;
 
 static void *data_writer(void *data) {
 
-	int oldtype;
-
-        
-
 	comm_error_t *err;
-	comm_thread_info_t *thread_arg;
 	comm_thread_info_t *info = (comm_thread_info_t*)data;
+	comm_data_writer_ret_t *ret_value;
 
 	int fd;
 	char *fifo;
-	char *res_fifo;
-	size_t written = 0;
 
-	int mkfiforet;
+	int oldtype;
 
-	pthread_t listen_thread;
-	int iret;
+	printf("data writer\n");
 
-	/* allow the thread to be killed at any time */
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
 
 	err = NEW(comm_error_t);
-	thread_arg = NEW(comm_thread_info_t);
 
-	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(addr->host)+sizeof(FIFO_REQUEST_EXTENSION));
-	res_fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(addr->host)+sizeof(FIFO_RESPONSE_EXTENSION));
+	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(info->origin->host)+sizeof(FIFO_REQUEST_EXTENSION));
 
-	if (!fifo || !res_fifo) {
+	if (!fifo) {
 		err->code = 1;
 		err->msg = "FIFO could not be allocated";
-		return info->cb(err, addr, NULL);
+		info->cb(err, info->endpoint, NULL);
+		pthread_exit(NULL);
+		return nil;
 	}
 
 
 	printf("Writing FIFO\n");
 
-	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, addr->host, FIFO_REQUEST_EXTENSION);
-	sprintf(res_fifo, "%s%s%s", FIFO_PATH_PREFIX, addr->host, FIFO_RESPONSE_EXTENSION);
+	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_REQUEST_EXTENSION);
 
 	if (access(fifo, F_OK) == -1) {
 		// fifo does not exist
@@ -157,162 +175,141 @@ static void *data_writer(void *data) {
 		if (mkfifo(fifo, FIFO_PERMS) == -1) {
 			err->code = 2;
 			err->msg = "FIFO could not be created";
-			return cb(err, addr, NULL);
+			info->cb(err, info->endpoint, NULL);
+			pthread_exit(NULL);
+			return nil;
 		}
 
 	}
 
 	printf("Opening FIFO: %s\n", fifo);
-	errno = 0;
-	if ( (fd = open(fifo, O_WRONLY|O_NONBLOCK)) == -1) {
+	if ( (fd = open(fifo, O_WRONLY)) == -1) {
 		unlink(fifo);
 		err->code = 2;
 		err->msg = "FIFO could not be opened";
-		printf("panic: %d\t\tmsg:%s\n", errno, strerror(errno));
-		return cb(err, addr, NULL);
+		info->cb(err, info->endpoint, NULL);
+		pthread_exit(NULL);
+		return nil;
 	}
+
+	ret_value = NEW(comm_data_writer_ret_t);
+
+	ret_value->fd = fd;
+	ret_value->fifo = fifo;
 
 	pthread_cond_signal(&done);
-	/** Hasta aca **/
 
-	printf("A punto de escribir\n");
+	pthread_exit((void*)ret_value);
 
-	while (written < size) {
-		write(fd, data+written, 1);
-		written++;
-	}
-	close(fd);
-	unlink(fifo);
-
-
-	if (access(res_fifo, F_OK) == -1) {
-		// fifo does not exist
-
-		if (mkfifo(res_fifo, FIFO_PERMS) == -1) {
-			err->code = 4;
-			err->msg = "Response FIFO could not be created";
-			return cb(err, addr, NULL);
-		}
-
-	}
+	return (void*)ret_value;
 
 }
 
+ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 
+ 	comm_error_t *err;
+ 	comm_thread_info_t *thread_arg;
+ 	comm_data_writer_ret_t *data_writer_ret;
 
-void comm_send_data_async(void * data, size_t size, comm_addr_t *addr, comm_callback_t cb) {
+ 	struct timespec ts;
+ 	pthread_t writer_thread;
+ 	int writer_thread_err;
 
-	comm_error_t *err;
-	comm_thread_info_t *thread_arg;
+ 	int fd;
+ 	char *res_fifo;
+ 	size_t written = 0;
 
-	struct timespec abs_time, max_wait;
-	pthread_t writer_thread;
-	int writer_thread_err;
+ 	pthread_t listen_thread;
+ 	int iret;
 
-	thread_arg->cb = cb;
-	thread_arg->addr = addr;
+ 	err = NEW(comm_error_t);
+ 	thread_arg = NEW(comm_thread_info_t);
+ 	data_writer_ret = NEW(comm_data_writer_ret_t);
 
-	pthread_mutex_lock(&calculating);
+ 	thread_arg->cb = cb;
+ 	thread_arg->origin = origin;
+ 	thread_arg->endpoint = endpoint;
 
-	max_wait.tv_sec = 20; // 20 = TIMEOUT;
+ 	current_utc_time(&ts);
 
-	clock_gettime(CLOCK_REALTIME, &abs_time);
-	abs_time.tv_sec += max_wait.tv_sec;
-	abs_time.tv_nsec += max_wait.tv_nsec;
+ 	ts.tv_sec += 20;
 
-	pthread_create(&writer_thread, NULL, data_writer, (void*)thread_arg);
+#ifdef __MACH__
+ 	pthread_mutex_lock(&calculating);
+#endif
 
-	writer_thread_err = pthread_cond_timedwait(&done, &calculating, &abs_time);
+ 	pthread_create(&writer_thread, NULL, data_writer, (void*)thread_arg);
 
-	if (writer_thread_err == ETIMEDOUT) {
+ 	printf("Before wait\n");
+#ifdef __MACH__
+ 	printf("Mach\n");
+ 	writer_thread_err = pthread_cond_timedwait(&done, &calculating, &ts);
+
+ 	// pthread_join(writer_thread, (void**)&(data_writer_ret));
+
+ 	printf("Writer err: %d\n", writer_thread_err);
+
+ 	if (writer_thread_err == ETIMEDOUT) {
+		fprintf(stderr, "%s: calculation timed out\n", __func__);
 		// timed out
-		err->code = 7;
-		err->msg = "Timed Out";
-		cb(err, addr, nil);
-	}
-	if (!writer_thread_err) {
-		pthread_mutex_lock(&calculating);
-	}
+ 		err->code = 7;
+ 		err->msg = "Timed Out";
+ 		return cb(err, endpoint, nil);
+ 	}
 
-	int fd;
-	char *fifo;
-	char *res_fifo;
-	size_t written = 0;
+ 	if (!writer_thread_err) {
+ 		printf("no error\n");
+		pthread_mutex_unlock(&calculating);
+		pthread_join(writer_thread, (void**)&(data_writer_ret));
+		printf("fd: %d\n", data_writer_ret->fd);
+		printf("fifo: %s\n", data_writer_ret->fifo);
+ 	}
 
-	int mkfiforet;
+#else
+ 	printf("linux\n");
+ 	writer_thread_err = pthread_timedjoin_np(writer_thread, (void**)&(data_writer_ret), &ts);
 
-	pthread_t listen_thread;
-	int iret;
+ 	printf("Writer err: %d\n", writer_thread_err);
 
-	err = NEW(comm_error_t);
-	thread_arg = NEW(comm_thread_info_t);
+ 	if (writer_thread_err != 0) {
+		// timed out
+ 		err->code = 7;
+ 		err->msg = "Timed Out";
+ 		return cb(err, endpoint, nil);
+ 	}
+#endif
 
-	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(addr->host)+sizeof(FIFO_REQUEST_EXTENSION));
-	res_fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(addr->host)+sizeof(FIFO_RESPONSE_EXTENSION));
+ 	fd = data_writer_ret->fd;
 
-	if (!fifo || !res_fifo) {
-		err->code = 1;
-		err->msg = "FIFO could not be allocated";
-		return cb(err, addr, NULL);
-	}
+ 	while (written < size) {
+ 		write(fd, data+written, 1);
+ 		written++;
+ 	}
 
+ 	close(fd);
+ 	unlink(data_writer_ret->fifo);
 
-	printf("Writing FIFO\n");
+ 	return;
 
-	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, addr->host, FIFO_REQUEST_EXTENSION);
-	sprintf(res_fifo, "%s%s%s", FIFO_PATH_PREFIX, addr->host, FIFO_RESPONSE_EXTENSION);
+ 	res_fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(origin->host)+sizeof(FIFO_RESPONSE_EXTENSION));
 
-	if (access(fifo, F_OK) == -1) {
+ 	sprintf(res_fifo, "%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_RESPONSE_EXTENSION);
+
+ 	if (access(res_fifo, F_OK) == -1) {
 		// fifo does not exist
 
-		if (mkfifo(fifo, FIFO_PERMS) == -1) {
-			err->code = 2;
-			err->msg = "FIFO could not be created";
-			return cb(err, addr, NULL);
-		}
+ 		if (mkfifo(res_fifo, FIFO_PERMS) == -1) {
+ 			err->code = 4;
+ 			err->msg = "Response FIFO could not be created";
+ 			return cb(err, endpoint, NULL);
+ 		}
 
-	}
+ 	}
 
-	sleep(20);
-
-	printf("Opening FIFO: %s\n", fifo);
-	errno = 0;
-	if ( (fd = open(fifo, O_WRONLY|O_NONBLOCK)) == -1) {
-		unlink(fifo);
-		err->code = 2;
-		err->msg = "FIFO could not be opened";
-		printf("panic: %d\t\tmsg:%s\n", errno, strerror(errno));
-		return cb(err, addr, NULL);
-	}
-
-	printf("A punto de escribir\n");
-
-	while (written < size) {
-		write(fd, data+written, 1);
-		written++;
-	}
-	close(fd);
-	unlink(fifo);
-
-
-	if (access(res_fifo, F_OK) == -1) {
-		// fifo does not exist
-
-		if (mkfifo(res_fifo, FIFO_PERMS) == -1) {
-			err->code = 4;
-			err->msg = "Response FIFO could not be created";
-			return cb(err, addr, NULL);
-		}
-
-	}
-
-	thread_arg->cb = cb;
-	thread_arg->addr = addr;
-
-	if ( (iret = pthread_create(&listen_thread, NULL, data_listener, (void*)thread_arg)) ) {
-		fprintf(stderr, "pthread create returned %d\n", iret);
-	}
+ 	if ( (iret = pthread_create(&listen_thread, NULL, data_listener, (void*)thread_arg)) ) {
+ 		fprintf(stderr, "pthread create returned %d\n", iret);
+ 	}
 
 	// cb(err, addr, (char*)data);
-}
+ }
 
