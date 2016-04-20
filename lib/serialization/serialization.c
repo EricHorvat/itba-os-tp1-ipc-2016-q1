@@ -1,12 +1,12 @@
-#include "headers/serialization.h"
+#include <serialization.h>
 
-#include "../../utils.h"
+#include <utils.h>
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <json-c/json.h>
+#include <json.h>
 
 static const char* stringify_int(int);
 static const char* stringify_double(double);
@@ -69,46 +69,46 @@ static const char* stringify_data(void* data, size_t size) {
 
 // Sync
 
-void send_string(char *string, comm_addr_t *addr, comm_error_t *error) {
+void send_string(char *string, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 	const char* serialized = stringify_string(string);
-	comm_send_data((void*)serialized, strlen(serialized), addr, error);
+	comm_send_data((void*)serialized, strlen(serialized), origin, endpoint, error);
 }
 
-void send_int(int number, comm_addr_t *addr, comm_error_t *error) {
+void send_int(int number, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 	printf("sending int %d\n", number);
 	const char* serialized = stringify_int(number);
-	comm_send_data((void*)serialized, strlen(serialized), addr, error);
+	comm_send_data((void*)serialized, strlen(serialized), origin, endpoint, error);
 }
 
-void send_double(double number, comm_addr_t *addr, comm_error_t *error) {
+void send_double(double number, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 	const char* serialized = stringify_double(number);
-	comm_send_data((void*)serialized, strlen(serialized), addr, error);
+	comm_send_data((void*)serialized, strlen(serialized), origin, endpoint, error);
 }
 
-void send_data(void *data, size_t size, comm_addr_t *addr, comm_error_t *error) {
+void send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 	const char* serialized = stringify_data(data, size);
-	comm_send_data((void*)serialized, strlen(serialized), addr, error);
+	comm_send_data((void*)serialized, strlen(serialized), origin, endpoint, error);
 }
 
 // Async
 
-void send_string_async(char *string, comm_addr_t *addr, comm_callback_t cb) {
+void send_string_async(char *string, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 	const char* serialized = stringify_string(string);
-	comm_send_data_async((void*)serialized, strlen(serialized), addr, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
 
-void send_int_async(int number, comm_addr_t *addr, comm_callback_t cb) {
+void send_int_async(int number, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 	const char* serialized = stringify_int(number);
 	printf("%s\n", serialized);
-	comm_send_data_async((void*)serialized, strlen(serialized), addr, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
 
-void send_double_async(double number, comm_addr_t *addr, comm_callback_t cb) {
+void send_double_async(double number, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 	const char* serialized = stringify_double(number);
-	comm_send_data_async((void*)serialized, strlen(serialized), addr, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
 
-void send_data_async(void *data, size_t size, comm_addr_t *addr, comm_callback_t cb) {
+void send_data_async(void *data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 	const char* serialized = stringify_data(data, size);
-	comm_send_data_async((void*)serialized, strlen(serialized), addr, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
