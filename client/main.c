@@ -10,7 +10,7 @@
 #include <serialization.h>
 #include <utils.h>
 
-#define DEFAULT_PROTOCOL "fd://"
+#define DEFAULT_PROTOCOL "fd"
 
 typedef struct {
 	char *client_name;
@@ -109,14 +109,13 @@ int main (int argc, char **argv) {
 
 	comm_addr_t *client_addr, *server_addr;
 	comm_addr_error_t addr_error;
+	char *client_url, *server_url;
 
 	client_args_t *client_args;
 
 	client_args = NEW(client_args_t);
 
 	process_arguments(argc, argv, client_args);
-
-	printf("Argument info:\nClient name: %s\tServer: %s\tProtocol:%s\n", client_args->client_name, client_args->server, client_args->protocol);
 
 	if (!client_args->client_name) {
 		client_args->client_name = (char*)malloc(9);
@@ -141,15 +140,25 @@ int main (int argc, char **argv) {
 	// connection->addr = addr;
 	// connection->connection_file = "server_incoming_connections.fifo";
 
-	if ( (addr_error = address_from_url(sprintf(), client_addr)) > 0) {
+	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name));
+	server_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->server));
 
-		printf("Error %d\n", addr_error);
-		return addr_error;
-	}
+	sprintf(client_url, "%s://%s", client_args->protocol, client_args->client_name);
+	sprintf(server_url, "%s://%s", client_args->protocol, client_args->server);
 
-	comm_open(connection);
+	address_from_url(client_url, client_addr);
+	address_from_url(server_url, server_addr);
 
-	printf("Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", addr->protocol, addr->host, addr->port);
+	// if ( (addr_error = address_from_url(, client_addr)) > 0) {
+
+	// 	printf("Error %d\n", addr_error);
+	// 	return addr_error;
+	// }
+
+	// comm_open(connection);
+
+	printf("Client Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", client_addr->protocol, client_addr->host, client_addr->port);
+	printf("Server Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", server_addr->protocol, server_addr->host, server_addr->port);
 
 	send_int_async(3, client_addr, server_addr, &response_handler);
 
