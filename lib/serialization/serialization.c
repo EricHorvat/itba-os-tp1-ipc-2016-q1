@@ -99,7 +99,6 @@ void send_string_async(char *string, comm_addr_t *origin, comm_addr_t *endpoint,
 
 void send_int_async(int number, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 	const char* serialized = stringify_int(number);
-	printf("%s\n", serialized);
 	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
 
