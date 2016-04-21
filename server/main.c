@@ -16,7 +16,7 @@
 #include <utils.h>
 
 static char* process_arguments(int argc, char **argv);
-static void incoming_connections_loop();
+static int incoming_connections_loop();
 
 static char* process_arguments(int argc, char **argv) {
 
