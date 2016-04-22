@@ -26,8 +26,8 @@ static void response_handler(comm_error_t *err, comm_addr_t *addr, char * respon
 
 	// printf("%s dice: %s\n", addr->url, response);
 
-	printf("Err Code: %d\tmsg: %s\n", err->code, err->msg);
-	printf("response: %s\n", response);
+	printf("\n*****Err Code: %d\tmsg: %s\n", err->code, err->msg);
+	printf("******response: %s\n", response);
 
 }
 
@@ -111,6 +111,8 @@ int main (int argc, char **argv) {
 	comm_addr_error_t addr_error;
 	char *client_url, *server_url;
 
+	int a;
+
 	client_args_t *client_args;
 
 	client_args = NEW(client_args_t);
@@ -119,7 +121,7 @@ int main (int argc, char **argv) {
 
 	if (!client_args->client_name) {
 		client_args->client_name = (char*)malloc(9);
-		sprintf(client_args->client_name, "anon%d", getrnduser());
+		sprintf(client_args->client_name, "anon%d", ( a = getrnduser()));
 	}
 
 	if (!client_args->protocol) {
@@ -131,7 +133,11 @@ int main (int argc, char **argv) {
 		client_args->server = "google.com";
 	}
 
-	printf("Argument info:\nClient name: %s\tServer: %s\tProtocol:%s\n", client_args->client_name, client_args->server, client_args->protocol);
+	printf("+--------------------------------------------------------+\n");
+	printf("| client name\t\t | server\t | protocol\t |\n");
+	printf("+--------------------------------------------------------+\n");
+	printf("| %s\t\t | %s\t | %s\t\t |\n", client_args->client_name, client_args->server, client_args->protocol);
+	printf("+--------------------------------------------------------+\n");
 
 	// connection = NEW(connection_t);
 	client_addr = NEW(comm_addr_t);
@@ -157,11 +163,11 @@ int main (int argc, char **argv) {
 
 	// comm_open(connection);
 
-	printf("Client Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", client_addr->protocol, client_addr->host, client_addr->port);
-	printf("Server Address Info:\nProtocol: %s\tHost: %s\tPort:%d\n", server_addr->protocol, server_addr->host, server_addr->port);
-
-	send_int_async(3, client_addr, server_addr, &response_handler);
+	send_int_async(a, client_addr, server_addr, &response_handler);
+	// send_int_async(5, client_addr, server_addr, &response_handler);
 
 	printf("Something\n");
+
+	sleep(50);
 
 }

@@ -37,7 +37,7 @@ static const char* stringify_int(int i) {
 static const char* stringify_double(double i) {
 	json_object *json_object_object = json_object_new_object();
 	json_object *json_object_double = json_object_new_double(i);
-	json_object *json_object_string = json_object_new_string("int");
+	json_object *json_object_string = json_object_new_string("double");
 
 	json_object_object_add(json_object_object, "kind", json_object_string);
 	json_object_object_add(json_object_object, "value", json_object_double);

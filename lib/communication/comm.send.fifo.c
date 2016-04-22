@@ -61,7 +61,7 @@ typedef struct {
 
 typedef void* (*pthread_func_t)(void* data);
 
-static unsigned int TIMEOUT = 3;
+static unsigned int TIMEOUT = 10;
 
 /**
  * [set_timeout description]
@@ -112,7 +112,8 @@ static int create_fifo(char *fifo) {
 
 	if (access(fifo, F_OK) == -1) {
 		// fifo does not exist
-		if (mkfifo(fifo, FIFO_PERMS) == -1) {
+		if (access(fifo, F_OK) == -1 && mkfifo(fifo, FIFO_PERMS) == -1) {
+			fprintf(stderr, "mkfifo failed with errno:%d\tmsg%s\n", errno, strerror(errno));
 			return -1;
 		}
 	}
@@ -183,36 +184,39 @@ static void *data_listener(void *data) {
 	buffer[0] = 'c';
 	err = NEW(comm_error_t);
 
-	fifo = (char*)malloc(sizeof(FIFO_PATH_PREFIX)+sizeof(info->origin->host)+sizeof(FIFO_RESPONSE_EXTENSION));
+	fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION));
 
 	if (!fifo) {
-		err->code = 1;
-		err->msg = "[thread] FIFO could not be allocated";
-		info->cb(err, info->endpoint, NULL);
-
-		pthread_exit(NULL);
-
-		return nil;
+		fprintf(stderr, "MemoryError: FIFO [%s] could not be allocated\n", fifo);
+		abort();
 	}
 
 	printf("[thread] Writing FIFO\n");
 
-	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION);
+	sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
 
-	if (access(fifo, F_OK) == -1) {
-
-		err->code = 2;
-		err->msg = "[thread] Response FIFO not found";
-
-		info->cb(err, info->endpoint, NULL);
-
-		pthread_exit(NULL);
-
-		return nil;
-
+	while (access(fifo, F_OK) == -1) {
+		usleep(500);
 	}
 
+	// if () {
+
+	// 	printf("cannot access %s\n", fifo);
+
+	// 	err->code = 2;
+	// 	err->msg = "[thread] Response FIFO not found";
+
+	// 	info->cb(err, info->endpoint, NULL);
+
+	// 	pthread_exit(NULL);
+
+	// 	return nil;
+
+	// }
+
 	if ( (fd = open(fifo, O_RDONLY)) == -1) {
+
+		printf("cannot open %s\n", fifo);
 
 		unlink(fifo);
 		err->code = 2;
@@ -230,6 +234,9 @@ static void *data_listener(void *data) {
 		read(fd, (buffer+(int)read_bytes), 1);
 		read_bytes++;
 	}
+
+	printf("%s\n", buffer);
+
 	close(fd);
 
 	unlink(fifo);
@@ -261,14 +268,13 @@ static void *data_writer(void *data) {
 
 	int oldtype;
 
-	printf("data writer\n");
 #ifdef __MACH__
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
 #endif
 
 	err = NEW(comm_error_t);
 
-	len = strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_REQUEST_EXTENSION)+1;
+	len = strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION)+1;
 	fifo = (char*)malloc(len);
 
 	memset(fifo, '\0', len);
@@ -281,20 +287,21 @@ static void *data_writer(void *data) {
 	ret_value = NEW(comm_data_writer_ret_t);
 	ret_value->success = yes;
 
-	sprintf(fifo, "%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_REQUEST_EXTENSION);
+	sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
+
+	printf("> Opening fifo: %s\n", fifo);
 
 	if (create_fifo(fifo) == -1) {
 		err->code = 2;
-		err->msg = "FIFO could not be created";
+		err->msg = "Request FIFO could not be created";
 		info->cb(err, info->endpoint, NULL);
 		ret_value->success = no;
 	}
 
-	printf("Opening FIFO: %s\n", fifo);
 	if (ret_value->success && (fd = open(fifo, O_WRONLY)) == -1) {
 		unlink(fifo);
 		err->code = 2;
-		err->msg = "FIFO could not be opened";
+		err->msg = "Request FIFO could not be opened";
 		info->cb(err, info->endpoint, NULL);
 		ret_value->success = no;
 	}
@@ -389,7 +396,7 @@ static int announce_to_server(comm_thread_info_t *thread_info) {
 	int fd;
 	int len;
 
-	printf("Announcing request to server");
+	printf("> Announcing %s request to server %s ", thread_info->origin->host, thread_info->endpoint->host);
 
 	// mem allocation
 	err = NEW(comm_error_t);
@@ -416,9 +423,9 @@ static int announce_to_server(comm_thread_info_t *thread_info) {
 
 	sprintf(fifo_address, "%s%s%s%s", FIFO_PATH_PREFIX, thread_info->origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
 
-	printf(" through fifo %s\n", data_writer_ret->fifo);
+	printf("through fifo %s\n", data_writer_ret->fifo);
 
-	printf("announcement: %s\n", fifo_address);
+	printf("> Announcement content: %s\n", fifo_address);
 	write_one_by_one(fd, fifo_address, strlen(fifo_address));
 
 	close(fd);
@@ -446,7 +453,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 	pthread_t listen_thread;
 	int iret;
 
-	printf("Sending %s to %s\n", (char*)data, endpoint->url);
+	printf("> Sending %s to %s from %s\n", (char*)data, endpoint->host, origin->host);
 
 	// mem allocation
 	err = NEW(comm_error_t);
@@ -480,24 +487,21 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 	write_one_by_one(fd, data, size);	
 
 	close(fd);
-	unlink(data_writer_ret->fifo);
+	// unlink(data_writer_ret->fifo);
 
-	return;
+	res_fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION)+1);
 
-	res_fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_RESPONSE_EXTENSION));
+	memset(res_fifo, '\0', strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION)+1);
 
-	sprintf(res_fifo, "%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_RESPONSE_EXTENSION);
+	sprintf(res_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
 
-	if (access(res_fifo, F_OK) == -1) {
-		// fifo does not exist
+	printf("Response fifo: %s\n", res_fifo);
 
-		if (mkfifo(res_fifo, FIFO_PERMS) == -1) {
-			err->code = 4;
-			err->msg = "Response FIFO could not be created";
-			return cb(err, endpoint, NULL);
-		}
-
-	}
+	// if (create_fifo(res_fifo) == -1) {
+		// err->code = 4;
+		// err->msg = "Response FIFO could not be created";
+		// return cb(err, endpoint, NULL);
+	// }
 
 	if ( (iret = pthread_create(&listen_thread, NULL, data_listener, (void*)thread_arg)) ) {
 		fprintf(stderr, "pthread create returned %d\n", iret);
