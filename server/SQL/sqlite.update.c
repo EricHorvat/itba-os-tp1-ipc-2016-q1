@@ -2,13 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 int create_update_query(sqlite_update_query_t * query){
 	
 	query->table = malloc(sizeof(char)*MAX_NAME_LENGTH);
 	query->atributes = malloc(sizeof(char*)*MAX_COLUMNS);
 	query->values = malloc(sizeof(char*)*MAX_COLUMNS);
-	for(int i = 0; i < MAX_COLUMNS;i++){
+	for(int i = 0; i < MAX_COLUMNS; i++){
 		query->atributes[i] = NULL;
 		query->values[i] = NULL;
 	}
@@ -18,14 +19,19 @@ int create_update_query(sqlite_update_query_t * query){
 }
 
 int set_update_query_table(sqlite_update_query_t * query, char * table){
-	if(query == NULL) return NULL_QUERY;
-		
+	if(query == NULL) {
+		errno = NULL_QUERY;
+		return -1;
+	}	
 	sprintf(query->table,"%s",table);
 	return NO_QUERY_ERROR;
 }
 
 int set_update_query_value(sqlite_update_query_t * query, char * atribute, char * value){
-	if(query == NULL) return NULL_QUERY;
+	if(query == NULL){
+		errno = NULL_QUERY;
+		return -1;
+	}
 	
 	int i = 0;
 	while(query->atributes[i] != NULL && i++<MAX_COLUMNS);
@@ -43,7 +49,10 @@ int set_update_query_value(sqlite_update_query_t * query, char * atribute, char 
 }
 
 int set_update_query_where(sqlite_update_query_t * query, char * where){
-	if(query == NULL) return NULL_QUERY;
+	if(query == NULL) {
+		errno = NULL_QUERY;
+		return -1;
+	}
 	
 	sprintf(query->where,"%s",where);
 	return NO_QUERY_ERROR;

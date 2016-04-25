@@ -3,9 +3,11 @@
 #include <sqlite3.h>
 #include <stdlib.h>
 
+#include <unistd.h>
+
 int main(int argc, char const *argv[])
 {
-	connection * conn = malloc(sizeof(conn));
+	sql_connection * conn = malloc(sizeof(conn));
 	sqlite_select_query_t * query = malloc(sizeof(sqlite_select_query_t));
 
 	open_conn(conn);
@@ -18,7 +20,9 @@ int main(int argc, char const *argv[])
 
 	set_select_query_where(query,"NUMBER = 150");
 
-	run_sqlite_query(conn,select_query_to_str(query));
+	run_select_sqlite_query(conn,query);
+
+	sleep(5);
 
 	close_conn(conn);
 	return 0;

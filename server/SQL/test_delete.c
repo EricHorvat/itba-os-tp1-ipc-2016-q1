@@ -5,7 +5,7 @@
 
 int main(int argc, char const *argv[])
 {
-	connection * conn = malloc(sizeof(conn));
+	sql_connection * conn = malloc(sizeof(conn));
 	sqlite_delete_query_t * query = malloc(sizeof(sqlite_delete_query_t));
 
 	open_conn(conn);
@@ -16,7 +16,7 @@ int main(int argc, char const *argv[])
 
 	//set_delete_query_where(query,"EFFECTIVITY = 22222");
 
-	run_sqlite_query(conn,delete_query_to_str(query));
+	run_delete_sqlite_query(conn,query);
 
 	close_conn(conn);
 	return 0;

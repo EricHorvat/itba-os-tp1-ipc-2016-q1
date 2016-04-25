@@ -5,7 +5,7 @@
 
 int main(int argc, char const *argv[])
 {
-	connection * conn = malloc(sizeof(conn));
+	sql_connection * conn = malloc(sizeof(conn));
 	sqlite_update_query_t * query = malloc(sizeof(sqlite_update_query_t));
 
 	open_conn(conn);
@@ -22,7 +22,7 @@ int main(int argc, char const *argv[])
 
 	//set_update_query_where(query,"EFFECTIVITY = 11111");
 
-	run_sqlite_query(conn,update_query_to_str(query));
+	run_update_sqlite_query(conn,query);
 
 	close_conn(conn);
 	return 0;

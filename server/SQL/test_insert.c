@@ -5,7 +5,8 @@
 
 int main(int argc, char const *argv[])
 {
-	connection * conn = malloc(sizeof(conn));
+	sql_connection * conn = malloc(sizeof(conn));
+	
 	sqlite_insert_query_t * query = malloc(sizeof(sqlite_insert_query_t));
 
 	open_conn(conn);
@@ -20,7 +21,7 @@ int main(int argc, char const *argv[])
 
 	set_insert_query_value(query,"IDELEMENT2","5");
 
-	run_sqlite_query(conn,insert_query_to_str(query));
+	run_insert_sqlite_query(conn,query);
 
 	close_conn(conn);
 	return 0;

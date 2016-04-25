@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 int create_delete_query(sqlite_delete_query_t * query){
 	
@@ -12,14 +13,14 @@ int create_delete_query(sqlite_delete_query_t * query){
 }
 
 int set_delete_query_table(sqlite_delete_query_t * query, char * table){
-	if(query == NULL) return NULL_QUERY;
+	if(query == NULL) {errno = NULL_QUERY; return -1;}
 		
 	sprintf(query->table,"%s",table);
 	return NO_QUERY_ERROR;
 }
 
 int set_delete_query_where(sqlite_delete_query_t * query,char * where){
-	if(query == NULL) return NULL_QUERY;
+	if(query == NULL) {errno = NULL_QUERY; return -1;}
 	
 	sprintf(query->where,"%s",where);
 	return NO_QUERY_ERROR;
