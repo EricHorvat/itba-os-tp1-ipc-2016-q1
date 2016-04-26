@@ -100,7 +100,7 @@ char* comm_receive_data(comm_addr_t *server, comm_addr_t *client, comm_error_t *
 	char *buffer;
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(server->host)+strlen(FIFO_EXTENSION);
 	request_fifo = (char*)malloc(request_fifo_len+1);
 
 	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, client->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
