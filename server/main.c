@@ -199,7 +199,9 @@ static void listen_connections(server_config_t *config) {
 	comm_addr_t *server_addr, *client_addr;
 	pid_t childPID;
 	char *command;
+	comm_error_t *err;
 
+	err = NEW(comm_error_t);
 	server_addr = NEW(comm_addr_t);
 	client_addr = NEW(comm_addr_t);
 
@@ -239,8 +241,20 @@ static void listen_connections(server_config_t *config) {
 
 			while (1) {
 				// si no manda nada cuelga aca
-				command = comm_receive_data(client_addr, nil);
+				command = comm_receive_data(server_addr, client_addr, nil);
 				printf(ANSI_COLOR_CYAN"%s says %s\n"ANSI_COLOR_RESET, client_addr->host, command);
+
+				comm_send_data("hola", 4, server_addr, client_addr, err);
+
+				if (err->code) {
+
+					fprintf(stderr, ANSI_COLOR_RED "error: %d\tmsg:%s\n" ANSI_COLOR_RESET, err->code, err->msg);
+
+				} else {
+
+					printf(ANSI_COLOR_GREEN"data sent successfully: (%s)\n"ANSI_COLOR_RESET, err->msg);
+
+				}
 			}
 
 			

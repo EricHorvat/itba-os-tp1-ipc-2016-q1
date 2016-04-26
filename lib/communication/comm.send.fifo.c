@@ -161,18 +161,21 @@ static void *data_listener(void *data) {
 
 	comm_error_t *err;
 	char *fifo;
+	size_t fifo_len;
 	size_t read_bytes = 0;
 	int fd;
 	char* buffer;
 
 	buffer = (char*)malloc(2048);
+	memset(buffer, '\0', 2048);
 
 	comm_thread_info_t *info = (comm_thread_info_t*)data;
 
-	buffer[0] = 'c';
 	err = NEW(comm_error_t);
 
-	fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION));
+	// fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION));
+	fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(info->endpoint->host)+strlen(info->origin->host)+strlen(FIFO_EXTENSION);
+	fifo = (char*)malloc(fifo_len+1);
 
 	if (!fifo) {
 		fprintf(stderr, "MemoryError: FIFO [%s] could not be allocated\n", fifo);
@@ -181,26 +184,8 @@ static void *data_listener(void *data) {
 
 	printf("[thread] Writing FIFO\n");
 
-	sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
-
-	while (access(fifo, F_OK) == -1) {
-		usleep(500);
-	}
-
-	// if () {
-
-	// 	printf("cannot access %s\n", fifo);
-
-	// 	err->code = 2;
-	// 	err->msg = "[thread] Response FIFO not found";
-
-	// 	info->cb(err, info->endpoint, NULL);
-
-	// 	pthread_exit(NULL);
-
-	// 	return nil;
-
-	// }
+	// sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
+	sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->endpoint->host, info->origin->host, FIFO_EXTENSION);
 
 	if ( (fd = open(fifo, O_RDONLY)) == -1) {
 
@@ -217,13 +202,11 @@ static void *data_listener(void *data) {
 
 	}
 	
+	do {
+		read(fd, buffer+read_bytes, 1);
+	} while (*(buffer+read_bytes++) != '\0');
 
-	while (*(buffer+read_bytes) != '\0') {
-		read(fd, (buffer+(int)read_bytes), 1);
-		read_bytes++;
-	}
-
-	printf("%s\n", buffer);
+	printf("buffer: %s\n", buffer);
 
 	close(fd);
 
@@ -242,263 +225,45 @@ static void *data_listener(void *data) {
 
 void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
 
-}
-
-static void *data_writer(void *data) {
-
-	comm_error_t *err;
-	comm_thread_info_t *info = (comm_thread_info_t*)data;
-	comm_data_writer_ret_t *ret_value;
-
+	char *request_fifo;
+	size_t request_fifo_len = 0;
 	int fd;
-	char *fifo;
-	int len;
 
-	int oldtype;
+	if (!error)
+		error = NEW(comm_error_t);
 
-#ifdef __MACH__
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
-#endif
+	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
+	request_fifo = (char*)malloc(request_fifo_len+1);
 
-	err = NEW(comm_error_t);
+	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
+	request_fifo[request_fifo_len] = '\0';
 
-	len = strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION)+1;
-	fifo = (char*)malloc(len);
+	if (!exists(request_fifo)) {
 
-	memset(fifo, '\0', len);
+		if (mkfifo(request_fifo, FIFO_PERMS) == -1) {
 
-	if (!fifo) {
-		fprintf(stderr, "MemoryError: FIFO [%s] could not be allocated\n", fifo);
-		abort();
+			error->code = 4;
+			error->msg = "mkFIFO failed";
+			return;
+		}
 	}
 
-	ret_value = NEW(comm_data_writer_ret_t);
-	ret_value->success = yes;
+	if ( (fd = open(request_fifo, O_WRONLY)) == -1 ) {
 
-	sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-
-	printf("> Opening fifo: %s\n", fifo);
-
-	if (create_fifo(fifo) == -1) {
-		err->code = 2;
-		err->msg = "Request FIFO could not be created";
-		info->cb(err, info->endpoint, NULL);
-		ret_value->success = no;
-	}
-
-	if (ret_value->success && (fd = open(fifo, O_WRONLY)) == -1) {
-		unlink(fifo);
-		err->code = 2;
-		err->msg = "Request FIFO could not be opened";
-		info->cb(err, info->endpoint, NULL);
-		ret_value->success = no;
-	}
-	
-	if (ret_value->success) {
-		ret_value->fd = fd;
-		ret_value->fifo = fifo;
-	}
-#ifdef __MACH__
-	pthread_cond_signal(&done);
-#endif
-
-	pthread_exit((void*)ret_value);
-	return (void*)ret_value;
-
-}
-
-
-
-static void *announcement_writer(void *data) {
-
-	comm_error_t *err;
-	comm_thread_info_t *info = (comm_thread_info_t*)data;
-	comm_data_writer_ret_t *ret_value;
-
-	int fd;
-	char *fifo;
-	int len;
-
-	int oldtype;
-
-#ifdef __MACH__
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldtype);
-#endif
-
-	err = NEW(comm_error_t);
-
-	len = strlen(FIFO_PATH_PREFIX)+strlen(info->endpoint->host)+strlen(FIFO_INPUT_EXTENSION)+strlen(FIFO_EXTENSION)+1;
-	fifo = (char*)malloc(len);
-
-	memset(fifo, ZERO, len);
-
-	if (!fifo) {
-		fprintf(stderr, "MemoryError: FIFO [%s] could not be allocated\n", fifo);
-		abort();
-	}
-
-	ret_value = NEW(comm_data_writer_ret_t);
-	ret_value->success = yes;
-
-	sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->endpoint->host, FIFO_INPUT_EXTENSION, FIFO_EXTENSION);
-
-	if (create_fifo(fifo) == -1) {
-		err->code = 2;
-		err->msg = "Announce FIFO could not be created";
-		info->cb(err, info->endpoint, NULL);
-		ret_value->success = no;
-	}
-
-	if (ret_value->success && (fd = open(fifo, O_WRONLY)) == -1) {
-		unlink(fifo);
-		err->code = 2;
-		err->msg = "Announce FIFO could not be opened";
-		info->cb(err, info->endpoint, NULL);
-		ret_value->success = no;
-	}
-
-	if (ret_value->success) {
-		ret_value->fd = fd;
-		ret_value->fifo = fifo;
-	}
-#ifdef __MACH__
-	pthread_cond_signal(&done);
-#endif
-
-	pthread_exit((void*)ret_value);
-
-	return (void*)ret_value;
-
-}
-
-static int announce_to_server(comm_thread_info_t *thread_info) {
-
-	// variable declaration
-	comm_error_t *err;
-	comm_data_writer_ret_t *data_writer_ret;
-
-	char *fifo_address;
-
-	pthread_t announcer_thread;
-
-	int fd;
-	int len;
-
-	printf("> Announcing %s request to server %s ", thread_info->origin->host, thread_info->endpoint->host);
-
-	// mem allocation
-	err = NEW(comm_error_t);
-
-	data_writer_ret = (comm_data_writer_ret_t*)pthread_start_with_timeout(announcer_thread, announcement_writer, (void*)thread_info, TIMEOUT);
-
-	if (!data_writer_ret) {
-		err->code = 7;
-		err->msg = "Timed Out";
-		thread_info->cb(err, thread_info->endpoint, nil);
-		return 1;
-	}
-
-	if (!data_writer_ret->success) {
-		return 2;
-	}
-
-	fd = data_writer_ret->fd;
-
-	len = strlen(FIFO_PATH_PREFIX)+strlen(thread_info->origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION)+1;
-	fifo_address = (char*)malloc(len);
-
-	memset(fifo_address, ZERO, len);
-
-	sprintf(fifo_address, "%s%s%s%s", FIFO_PATH_PREFIX, thread_info->origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-
-	printf("through fifo %s\n", data_writer_ret->fifo);
-
-	printf("> Announcement content: %s\n", fifo_address);
-	write_one_by_one(fd, fifo_address, strlen(fifo_address));
-
-	close(fd);
-
-	unlink(fifo_address);
-
-	return 0;
-
-}
-
-/*
-void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
-
-	// variable declaration
-	comm_error_t *err;
-	comm_thread_info_t *thread_arg;
-	comm_data_writer_ret_t *data_writer_ret;
-
-	pthread_t writer_thread;
-	int writer_thread_err;
-
-	int fd;
-	char *res_fifo;
-	size_t written = 0;
-
-	pthread_t listen_thread;
-	int iret;
-
-	printf("> Sending %s to %s from %s\n", (char*)data, endpoint->host, origin->host);
-
-	// mem allocation
-	err = NEW(comm_error_t);
-	thread_arg = NEW(comm_thread_info_t);
-	// data_writer_ret = NEW(comm_data_writer_ret_t);
-
-	// fill in thread arguments
-	thread_arg->cb = cb;
-	thread_arg->origin = origin;
-	thread_arg->endpoint = endpoint;
-
-	if (announce_to_server(thread_arg) != 0) {
+		error->code = 4;
+		error->msg = "Response FIFO could not be opened";
 		return;
 	}
 
-	data_writer_ret = (comm_data_writer_ret_t*)pthread_start_with_timeout(writer_thread, data_writer, (void*)thread_arg, TIMEOUT);
-
-	if (!data_writer_ret) {
-		// timed out
-		err->code = 7;
-		err->msg = "Timed Out";
-		return cb(err, endpoint, nil);
-	}
-
-	if (!data_writer_ret->success) {
-		return;
-	}
-
-	fd = data_writer_ret->fd;
-
-	write_one_by_one(fd, data, size);	
+	write_one_by_one(fd, data, size);
 
 	close(fd);
-	// unlink(data_writer_ret->fifo);
 
-	res_fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION)+1);
+	error->code = 0;
+	error->msg = "Todo OK";
 
-	memset(res_fifo, '\0', strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION)+1);
-
-	sprintf(res_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
-
-	printf("Response fifo: %s\n", res_fifo);
-
-	// if (create_fifo(res_fifo) == -1) {
-		// err->code = 4;
-		// err->msg = "Response FIFO could not be created";
-		// return cb(err, endpoint, NULL);
-	// }
-
-	if ( (iret = pthread_create(&listen_thread, NULL, data_listener, (void*)thread_arg)) ) {
-		fprintf(stderr, "pthread create returned %d\n", iret);
-	}
-
-	// cb(err, addr, (char*)data);
 }
-*/
 
 void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 
@@ -510,10 +275,13 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 	comm_error_t *err;
 	comm_thread_info_t *thread_arg;
 
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
+	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
 	request_fifo = (char*)malloc(request_fifo_len+1);
 
-	request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
+	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
+	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
+	request_fifo[request_fifo_len] = '\0';
 
 	if (!exists(request_fifo)) {
 

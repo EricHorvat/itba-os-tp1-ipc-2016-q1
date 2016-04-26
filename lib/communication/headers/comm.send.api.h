@@ -2,6 +2,7 @@
 #define __COMMUNICATION_SEND_API__
 
 #include <comm.addr.h>
+
 #include <stdlib.h>
 
 typedef void (*comm_callback_t)(comm_error_t *err, comm_addr_t *origin, char *response);

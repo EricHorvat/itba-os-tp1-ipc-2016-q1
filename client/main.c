@@ -174,7 +174,7 @@ int main (int argc, char **argv) {
 	}
 
 	send_int_async(a, client_addr, server_addr, &response_handler);
-	// send_int_async(5, client_addr, server_addr, &response_handler);
+	send_int_async(5, client_addr, server_addr, &response_handler);
 
 	printf("Something\n");
 
