@@ -45,14 +45,14 @@ static unsigned int TIMEOUT = 10;
 	TIMEOUT = t;
 }*/
 
-comm_addr_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
+connection_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
 
 	char *input_fifo;
 	size_t input_fifo_len = 0;
 	int fd;
 	size_t read_bytes = 0;
 	char *buffer;
-	comm_addr_t *client;
+	connection_t *connection;
 
 	input_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(server->host)+strlen(FIFO_INPUT_EXTENSION)+strlen(FIFO_EXTENSION);
 	input_fifo = (char*)malloc(input_fifo_len+1);
@@ -62,13 +62,13 @@ comm_addr_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
 
 	if (!exists(input_fifo)) {
 
-		if (mkfifo(input_fifo, FIFO_PERMS) == -1) {
+		if (mkfifo(input_fifo, FIFO_PERMS) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"mkfifo failed\n"ANSI_COLOR_RESET);
 			return nil;
 		}
 	}
 
-	if ( (fd = open(input_fifo, O_RDONLY)) == -1 ) {
+	if ( (fd = open(input_fifo, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
 		// fill error;
 		return nil;
@@ -83,10 +83,17 @@ comm_addr_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
 	} while (*(buffer+read_bytes++) != '\0');
 	// wait for close on the other end
 
-	client = NEW(comm_addr_t);
+	connection = NEW(connection_t);
+	connection->client_addr = NEW(comm_addr_t);
 	// hay que escribir el url fd://anon9137
 
-	address_from_url(buffer, client);
+	
+
+	address_from_url(buffer, connection->client_addr);
+
+	connection->server_addr = server;
+	connection->connection_file = input_fifo;
+	connection->state = CONNECTION_STATE_OPEN;
 
 	return client;
 	

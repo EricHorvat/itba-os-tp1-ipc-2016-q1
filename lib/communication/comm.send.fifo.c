@@ -234,14 +234,14 @@ void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *e
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
 	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
-	request_fifo = (char*)malloc(request_fifo_len+1);
+	request_fifo = (char*)malloc(request_fifo_len+2);
 
 	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
 	request_fifo[request_fifo_len] = '\0';
 
 	if (!exists(request_fifo)) {
 
-		if (mkfifo(request_fifo, FIFO_PERMS) == -1) {
+		if (mkfifo(request_fifo, FIFO_PERMS) < 0) {
 
 			error->code = 4;
 			error->msg = "mkFIFO failed";
@@ -249,7 +249,7 @@ void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *e
 		}
 	}
 
-	if ( (fd = open(request_fifo, O_WRONLY)) == -1 ) {
+	if ( (fd = open(request_fifo, O_WRONLY)) < 0 ) {
 
 		error->code = 4;
 		error->msg = "Response FIFO could not be opened";
@@ -277,7 +277,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
 	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
-	request_fifo = (char*)malloc(request_fifo_len+1);
+	request_fifo = (char*)malloc(request_fifo_len+2);
 
 	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
 	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
@@ -285,7 +285,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 	if (!exists(request_fifo)) {
 
-		if (mkfifo(request_fifo, FIFO_PERMS) == -1) {
+		if (mkfifo(request_fifo, FIFO_PERMS) < 0) {
 
 			err = NEW(comm_error_t);
 
@@ -295,7 +295,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 		}
 	}
 
-	if ( (fd = open(request_fifo, O_WRONLY)) == -1 ) {
+	if ( (fd = open(request_fifo, O_WRONLY)) < 0 ) {
 
 		err = NEW(comm_error_t);
 

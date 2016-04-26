@@ -1,7 +1,7 @@
 #ifndef __COMMUNICATION_ADDRESS_API__
 #define __COMMUNICATION_ADDRESS_API__
 
-#include "comm.errors.h"
+#include <comm.errors.h>
 
 typedef enum {
 	ADDRESS_OK = 0,

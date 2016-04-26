@@ -173,8 +173,8 @@ int main (int argc, char **argv) {
 		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
 	}
 
-	send_int_async(a, client_addr, server_addr, &response_handler);
-	send_int_async(5, client_addr, server_addr, &response_handler);
+	send_int_async(a, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
 
 	printf("Something\n");
 

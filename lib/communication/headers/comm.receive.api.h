@@ -11,8 +11,7 @@
  * 
  **/
 
-comm_addr_t* comm_listen(comm_addr_t *server, comm_error_t *error);
-
+connection_t* comm_listen(comm_addr_t *server, comm_error_t *error);
 char* comm_receive_data(comm_addr_t *server, comm_addr_t *client, comm_error_t *error);
 
 #endif
