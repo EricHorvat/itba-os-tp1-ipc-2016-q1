@@ -105,11 +105,13 @@ int main (int argc, char **argv) {
 	el nombre va a ser <username>.req.fifo
 	va a escribir su respuesta en <username>.res.fifo
 */
-	// connection_t *connection;
+	connection_t *connection;
 
 	comm_addr_t *client_addr, *server_addr;
 	comm_addr_error_t addr_error;
 	char *client_url, *server_url;
+
+	int conn_error;
 
 	int a;
 
@@ -130,27 +132,33 @@ int main (int argc, char **argv) {
 
 	if (!client_args->server) {
 		// entrar en modo interactivo
-		client_args->server = "google.com";
+		client_args->server = "google";
 	}
 
+	// <-- log
 	printf("+--------------------------------------------------------+\n");
 	printf("| client name\t\t | server\t | protocol\t |\n");
 	printf("+--------------------------------------------------------+\n");
 	printf("| %s\t\t | %s\t | %s\t\t |\n", client_args->client_name, client_args->server, client_args->protocol);
 	printf("+--------------------------------------------------------+\n");
+	// <!-- end log
 
-	// connection = NEW(connection_t);
+	connection = NEW(connection_t);
 	client_addr = NEW(comm_addr_t);
 	server_addr = NEW(comm_addr_t);
 
-	// connection->addr = addr;
+	connection->client_addr = client_addr;
+	connection->server_addr = server_addr;
+
 	// connection->connection_file = "server_incoming_connections.fifo";
 
 	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name));
 	server_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->server));
 
+	// <-- log
 	sprintf(client_url, "%s://%s", client_args->protocol, client_args->client_name);
 	sprintf(server_url, "%s://%s", client_args->protocol, client_args->server);
+	// <!-- end log
 
 	address_from_url(client_url, client_addr);
 	address_from_url(server_url, server_addr);
@@ -161,7 +169,9 @@ int main (int argc, char **argv) {
 	// 	return addr_error;
 	// }
 
-	// comm_open(connection);
+	if ( (conn_error = comm_open(connection) != 0) ) {
+		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
+	}
 
 	send_int_async(a, client_addr, server_addr, &response_handler);
 	// send_int_async(5, client_addr, server_addr, &response_handler);

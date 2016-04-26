@@ -12,10 +12,10 @@
 // https://gist.github.com/jbenet/1087739
 #include <time.h>
 #include <sys/time.h>
+#include <pthread.h>
 #ifdef __MACH__
 #include <mach/clock.h>
 #include <mach/mach.h>
-#include <glib.h>
 // http://cursuri.cs.pub.ro/~apc/2003/resources/pthreads/uguide/users-77.htm
 pthread_cond_t done  = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t calculating = PTHREAD_MUTEX_INITIALIZER;
@@ -37,7 +37,7 @@ void current_utc_time(struct timespec *ts) {
 
 }
 
-#include <pthread.h>
+#include <file_utils.h>
 #include <utils.h>
 #include <comm.fifo.h>
 
@@ -80,7 +80,7 @@ void set_timeout(unsigned int t) {
 static void *data_listener(void *);
 static void *pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t);
 static void *data_writer(void *data);
-static void write_one_by_one(int fd, void *data, size_t size);
+// static void write_one_by_one(int fd, void *data, size_t size);
 static int create_fifo(char *fifo);
 
 /**
@@ -89,19 +89,7 @@ static int create_fifo(char *fifo);
 
 **/
 
-/**
- * writes data one byte at a time
- * @param fd   fd to write to
- * @param data data to write
- * @param size size of data
- */
-static void write_one_by_one(int fd, void *data, size_t size) {
-	size_t written = 0;
-	while (written < size) {
-		write(fd, data+written, 1);
-		written++;
-	}
-}
+
 
 /**
  * [create_fifo description]
@@ -436,6 +424,7 @@ static int announce_to_server(comm_thread_info_t *thread_info) {
 
 }
 
+/*
 void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
 
 	// variable declaration
@@ -509,4 +498,57 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 	// cb(err, addr, (char*)data);
 }
+*/
 
+void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
+
+	char *request_fifo;
+	size_t request_fifo_len = 0;
+	int fd;
+	int pthread_ret;
+	pthread_t listener;
+	comm_error_t *err;
+	comm_thread_info_t *thread_arg;
+
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
+	request_fifo = (char*)malloc(request_fifo_len+1);
+
+	request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
+
+	if (!exists(request_fifo)) {
+
+		if (mkfifo(request_fifo, FIFO_PERMS) == -1) {
+
+			err = NEW(comm_error_t);
+
+			err->code = 4;
+			err->msg = "mkFIFO failed";
+			return cb(err, endpoint, NULL);
+		}
+	}
+
+	if ( (fd = open(request_fifo, O_WRONLY)) == -1 ) {
+
+		err = NEW(comm_error_t);
+
+		err->code = 4;
+		err->msg = "Response FIFO could not be opened";
+		return cb(err, endpoint, NULL);
+	}
+
+	write_one_by_one(fd, data, size);
+
+	close(fd);
+
+	thread_arg = NEW(comm_thread_info_t);
+
+	// fill in thread arguments
+	thread_arg->cb = cb;
+	thread_arg->origin = origin;
+	thread_arg->endpoint = endpoint;
+
+	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
+		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);
+	}
+
+}

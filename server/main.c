@@ -12,6 +12,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <communication.h>
+
 #include <config/server_config.h>
 
 #include <utils.h>
@@ -71,6 +73,9 @@ static int incoming_connections_loop() {
 	memset(host, ZERO, 2048);
 
 	while (1) {
+
+		
+
 
 		// is file desc open?
 		if (fcntl(fd, F_GETFL) < 0) {
@@ -189,6 +194,70 @@ static int incoming_connections_loop() {
 
 }
 
+static void listen_connections(server_config_t *config) {
+
+	comm_addr_t *server_addr, *client_addr;
+	pid_t childPID;
+	char *command;
+
+	server_addr = NEW(comm_addr_t);
+	client_addr = NEW(comm_addr_t);
+
+	if (address_from_url("fd://google", server_addr) != 0) {
+		fprintf(stderr, ANSI_COLOR_RED "Invalid Address\n" ANSI_COLOR_RESET);
+		abort();
+	}
+
+	printf(ANSI_COLOR_GREEN"listening on name: %s\n"ANSI_COLOR_RESET, server_addr->host);
+
+	while (1) {
+		printf(ANSI_COLOR_YELLOW"waiting for connections\n"ANSI_COLOR_RESET);
+		client_addr = comm_listen(server_addr, nil);
+
+
+		if (!client_addr) {
+
+			fprintf(stderr, ANSI_COLOR_RED"client_addr is null\n"ANSI_COLOR_RESET);
+
+			break;
+		}
+		printf(ANSI_COLOR_GREEN"opened connection for %s\n"ANSI_COLOR_RESET, client_addr->host);
+
+		childPID = fork();
+
+		if (childPID > 0) {
+
+			// parent
+
+			printf(ANSI_COLOR_GREEN"worker %d created for %s\n"ANSI_COLOR_RESET, childPID, client_addr->host);
+
+		} else {
+			if (childPID == -1) {
+				fprintf(stderr, ANSI_COLOR_RED "Could not fork\n" ANSI_COLOR_RESET);
+				abort();
+			}
+
+			while (1) {
+				// si no manda nada cuelga aca
+				command = comm_receive_data(client_addr, nil);
+				printf(ANSI_COLOR_CYAN"%s says %s\n"ANSI_COLOR_RESET, client_addr->host, command);
+			}
+
+			
+
+			// process data
+			// report to msq
+			// ask SQL
+			// respond
+			// 
+			
+			exit(0);
+		}
+	}
+
+}
+
+
 int main(int argc, char **argv) {
 	
 	
@@ -207,7 +276,9 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
-	while (incoming_connections_loop() > 0);
+	listen_connections(config);
+
+	// while (incoming_connections_loop() > 0);
 
 	return 0;
 }

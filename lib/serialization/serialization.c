@@ -111,3 +111,5 @@ void send_data_async(void *data, size_t size, comm_addr_t *origin, comm_addr_t *
 	const char* serialized = stringify_data(data, size);
 	comm_send_data_async((void*)serialized, strlen(serialized), origin, endpoint, cb);
 }
+
+

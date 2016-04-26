@@ -1,5 +1,5 @@
 GCC=gcc
-CFLAGS=-I./ -I./server -I./client -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers
+CFLAGS=-I./ -I./server -I./client -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
 GCCFLAGS=-pthread -pthread
 
 IMPORT_CFLAGS=$(shell pkg-config --cflags glib-2.0) $(shell pkg-config --cflags json-c)
@@ -7,7 +7,7 @@ IMPORT_LDFLAGS=$(shell pkg-config --libs glib-2.0) $(shell pkg-config --libs jso
 
 
 
-LIBRARY_SOURCES=$(wildcard lib/communication/*.c) $(wildcard lib/serialization/*.c)
+LIBRARY_SOURCES=$(wildcard lib/communication/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/file_utils/*.c)
 LIBRARY_OBJECTS=$(LIBRARY_SOURCES:.c=.o)
 
 CLIENT_ID=client
@@ -34,6 +34,9 @@ $(SERVER_ID): $(SERVER_OBJECTS) $(LIBRARY_OBJECTS)
 
 %.o: %.c
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -c $< -o $@
+
+wipe:
+	rm -f /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 clean:
 	rm -rf *.o client/*.o server/*.o lib/communication/*.o lib/serialization/*.o lib/sqlite/*.o

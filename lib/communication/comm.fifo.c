@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "headers/comm.fifo.h"
-
+#include <comm.fifo.h>
+/*
 comm_error_code_t comm_open(connection_t *comm) {
 
 	comm_error_t *err;
@@ -64,3 +64,4 @@ comm_error_code_t comm_open(connection_t *comm) {
 
 	return 0;
 }
+*/
