@@ -126,8 +126,11 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 		fprintf(stderr, ANSI_COLOR_RED"file [%s] does not exist\n"ANSI_COLOR_RESET, request_fifo);
 		
 
+
 		// OJO esta linea
-		while (!exists(request_fifo)); // OJO esta linea
+		while (!exists(request_fifo)) { // OJO esta linea
+			sleep(1); // OJO esta linea
+		} // OJO esta linea
 		// OJO esta linea
 	}
 

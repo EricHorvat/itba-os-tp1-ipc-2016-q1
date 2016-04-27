@@ -1,26 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 #include <types.h>
 
-// #include "../lib/communication/headers/communication.h"
 #include <serialization.h>
 #include <utils.h>
+#include <client_config.h>
+#include <commands.h>
 
 #define DEFAULT_PROTOCOL "fd"
 
-typedef struct {
-	char *client_name;
-	char *server;
-	char *protocol;
-} client_args_t;
-
 static void response_handler(comm_error_t *err, connection_t *conn, char * response);
-static void process_arguments(int argc, char **argv, client_args_t *);
 static int getrnduser();
 
 static void response_handler(comm_error_t *err, connection_t *conn, char * response) {
@@ -48,62 +40,6 @@ static void response_handler(comm_error_t *err, connection_t *conn, char * respo
 
 }
 
-static void process_arguments(int argc, char **argv, client_args_t *client_args) {
-
-	// http://www.gnu.org/software/libc/manual/html_falsede/Example-of-Getopt.html#Example-of-Getopt
-
-	int index;
-	int c;
-
-	if (!client_args)
-		client_args = NEW(client_args_t);
-
-	client_args->client_name = NULL;
-	client_args->server = NULL;
-	client_args->protocol = NULL;
-
-	opterr = 0;
-	while ((c = getopt(argc, argv, "n:s:p:")) != -1) {
-		switch (c) {
-			case 'n':
-				client_args->client_name = optarg;
-				break;
-			case 's':
-				client_args->server = optarg;
-				break;
-			case 'p':
-				
-				if ( strcmp(optarg, "fd") != 0 && strcmp(optarg, "socket") != 0) {
-					fprintf(stderr, "%s is not an allowed protocol\n", optarg);
-					abort();
-				}
-
-				client_args->protocol = optarg;
-				break;
-			case '?':
-				if (optopt == 'n')
-					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-				if (optopt == 's')
-					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-				if (optopt == 'p')
-					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
-				else if (isprint(optopt))
-					fprintf(stderr, "Unknown option `-%c'.\n", optopt);
-				else
-					fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-				return;
-			default:
-				printf("Aborting\n");
-				abort();
-		}
-	}
-
-	for (index = optind; index < argc; index++)
-		printf ("non-option argument %s\n", argv[index]);
-
-	return;
-}
-
 static bool seeded = false;
 
 static int getrnduser() {
@@ -124,9 +60,13 @@ int main (int argc, char **argv) {
 */
 	connection_t *connection;
 
-	comm_addr_t *client_addr, *server_addr;
 	comm_addr_error_t addr_error;
 	char *client_url, *server_url;
+
+	char *shell_buffer;
+	int shell_index = 0;
+	char c;
+	bool command_read = false;
 
 	command_get_t *get_cmd;
 
@@ -134,24 +74,36 @@ int main (int argc, char **argv) {
 
 	int a;
 
+	int err;
+
 	client_args_t *client_args;
 
 	client_args = NEW(client_args_t);
 
 	process_arguments(argc, argv, client_args);
 
+	connection = NEW(connection_t);
+	connection->client_addr = NEW(comm_addr_t);
+
 	if (!client_args->client_name) {
 		client_args->client_name = (char*)malloc(9);
 		sprintf(client_args->client_name, "anon%d", ( a = getrnduser()));
 	}
-
 	if (!client_args->protocol) {
 		client_args->protocol = DEFAULT_PROTOCOL;
 	}
 
-	if (!client_args->server) {
-		// entrar en modo interactivo
-		client_args->server = "google";
+	// alocate url
+	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name));
+	// format url
+	sprintf(client_url, "%s://%s", client_args->protocol, client_args->client_name);
+	// build address
+	address_from_url(client_url, connection->client_addr);
+
+	if (client_args->server) {
+		connection->server_addr = NEW(comm_addr_t);
+		server_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->server));
+		sprintf(server_url, "%s://%s", client_args->protocol, client_args->server);
 	}
 
 	// <-- log
@@ -162,25 +114,52 @@ int main (int argc, char **argv) {
 	printf("+--------------------------------------------------------+\n");
 	// <!-- end log
 
-	connection = NEW(connection_t);
-	client_addr = NEW(comm_addr_t);
-	server_addr = NEW(comm_addr_t);
+	shell_buffer = (char*)malloc(2048);
+	memset(shell_buffer, ZERO, 2048);
 
-	connection->client_addr = client_addr;
-	connection->server_addr = server_addr;
+	while (1) {
+
+		printf("> ");
+
+		do {
+
+			c = getchar();
+
+			switch (c) {
+				case NEWLINE:
+					putchar('\n');
+					command_read = yes;
+					break;
+				case '\b':
+					if (shell_index > 0)
+						shell_index--;
+					putchar('\b');
+					break;
+				case '\r':
+					break;
+				case '\t':
+					break;
+				default:
+					shell_buffer[shell_index++] = c;
+					shell_buffer[shell_index] = 0;
+					putchar(c);
+					break;
+			}
+		} while ( c != EOF && !command_read);
+
+		if ( ( err = cmd_parse(connection, shell_buffer)) ) {
+			printf(ANSI_COLOR_RED"cmd failed err: [%d]\n"ANSI_COLOR_RESET, err);
+		}
+		shell_buffer[0] = 0;
+		command_read = no;
+		shell_index = 0;
+
+	}
 
 	// connection->connection_file = "server_incoming_connections.fifo";
 
-	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name));
-	server_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->server));
-
-	// <-- log
-	sprintf(client_url, "%s://%s", client_args->protocol, client_args->client_name);
-	sprintf(server_url, "%s://%s", client_args->protocol, client_args->server);
-	// <!-- end log
-
-	address_from_url(client_url, client_addr);
-	address_from_url(server_url, server_addr);
+	
+	address_from_url(server_url, connection->server_addr);
 
 	// if ( (addr_error = address_from_url(, client_addr)) > 0) {
 
