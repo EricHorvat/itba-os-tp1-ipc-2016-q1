@@ -27,8 +27,22 @@ static void response_handler(comm_error_t *err, connection_t *conn, char * respo
 
 	// printf("%s dice: %s\n", addr->url, response);
 
-	printf("\n*****Err Code: %d\tmsg: %s\n", err->code, err->msg);
-	printf("******response: %s\n", response);
+	parse_result_t *result;
+
+	if (err->code) {
+		printf(ANSI_COLOR_RED"server error(%d): %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		return;
+	}
+
+	result = parse_encoded((const char*)response);
+
+	if (strcmp(result->kind, "int") == 0) {
+		printf(ANSI_COLOR_GREEN"server says: %d\n"ANSI_COLOR_RESET, result->data.i);
+	} else if ( strcmp(result->kind, "double") == 0) {
+		printf(ANSI_COLOR_GREEN"server says: %f\n"ANSI_COLOR_RESET, result->data.d);
+	} else if ( strcmp(result->kind, "string") == 0 ) {
+		printf(ANSI_COLOR_GREEN"server says: %s\n"ANSI_COLOR_RESET, result->data.str);
+	}
 
 	connection_close(conn);
 
@@ -184,8 +198,13 @@ int main (int argc, char **argv) {
 
 	// send_cmd_get(get_cmd, connection, COMMUNICATION_CLIENT_SERVER, nil);
 
-	send_int_async(a, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
-	// send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_double_async(a*2.0, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+
+	printf("waiting....\n");
+	sleep(2);
+	printf("stopped waiting\n");
+
+	send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
 
 	printf("Something\n");
 

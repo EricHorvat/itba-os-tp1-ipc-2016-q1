@@ -4,57 +4,101 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <errno.h>
-
+#include <pthread.h>
 #include <communication.h>
-
 #include <config/server_config.h>
-
 #include <utils.h>
-
 #include <serialization.h>
+
+#define MIN_THREADS 10
+
+typedef struct {
+	connection_t *connection;
+	char *input;
+} client_request_t;
+
+static void* server_responder(void* data) {
+
+	client_request_t *req;
+	comm_error_t *err;
+	parse_result_t *result;
+	pthread_t self;
+	int pid = (int)getpid();
+
+	err = NEW(comm_error_t);
+	self = pthread_self();
+	req = (client_request_t*)data;
+
+	result = parse_encoded((const char*)req->input);
+
+	printf(ANSI_COLOR_CYAN"worker %d::thread %d::client sent: [%s]\n"ANSI_COLOR_RESET, pid, (int)self, result->kind);
+
+	if (strcmp(result->kind, "int") == 0) {
+		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %d\n"ANSI_COLOR_RESET, pid, (int)self, result->data.i);
+		send_int((result->data.i)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
+	} else if ( strcmp(result->kind, "double") == 0) {
+		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %f\n"ANSI_COLOR_RESET, pid, (int)self, result->data.d);
+		send_double((result->data.d)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
+	} else if ( strcmp(result->kind, "string") == 0 ) {
+		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %s\n"ANSI_COLOR_RESET, pid, (int)self, result->data.str);
+		send_string(result->data.str+2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
+	}
+
+	if (err->code) {
+		fprintf(stderr, ANSI_COLOR_RED "worker %d::thread %d::error: %d\tmsg:%s\n" ANSI_COLOR_RESET, pid, (int)self, err->code, err->msg);
+	} else {
+		printf(ANSI_COLOR_GREEN"worker %d::thread %d::data sent successfully: (%s)\n"ANSI_COLOR_RESET, pid, (int)self, err->msg);
+	}
+
+	return nil;
+
+}
 
 static void listen_connections(server_config_t *config) {
 
 	connection_t *connection;
 	pid_t childPID;
 	char *command;
-	comm_error_t *err;
 	parse_result_t *result;
 
-	err = NEW(comm_error_t);
+	pthread_t **threads;
+	size_t current_thread = 0;
+	int pthread_ret;
+	client_request_t *request;
+
+	
 	connection = NEW(connection_t);
 	connection->server_addr = NEW(comm_addr_t);
-	// connection->client_addr = NEW(comm_addr_t);
+	
+	threads = (pthread_t**)malloc(MIN_THREADS*sizeof(pthread_t*));
 
 	if (address_from_url("fd://google", connection->server_addr) != 0) {
 		fprintf(stderr, ANSI_COLOR_RED "Invalid Address\n" ANSI_COLOR_RESET);
 		abort();
 	}
 
-	printf(ANSI_COLOR_GREEN"listening on name: %s\n"ANSI_COLOR_RESET, connection->server_addr->host);
+	printf(ANSI_COLOR_GREEN"master::listening on name: %s\n"ANSI_COLOR_RESET, connection->server_addr->host);
 
 	comm_listen(connection, nil);
 
 	while (1) {
-		printf(ANSI_COLOR_YELLOW"waiting for connections\n"ANSI_COLOR_RESET);
+		printf(ANSI_COLOR_YELLOW"master::waiting for connections\n"ANSI_COLOR_RESET);
 		comm_accept(connection, nil);
 
 		if (!connection) {
 			fprintf(stderr, ANSI_COLOR_RED"connection is null\n"ANSI_COLOR_RESET);
 			break;
 		}
-		printf(ANSI_COLOR_GREEN"opened connection for %s\n"ANSI_COLOR_RESET, connection->client_addr->host);
+		printf(ANSI_COLOR_GREEN"master::opened connection for %s\n"ANSI_COLOR_RESET, connection->client_addr->host);
 
 		childPID = fork();
 
 		if (childPID > 0) {
 			// parent
-			printf(ANSI_COLOR_GREEN"worker %d created for %s\n"ANSI_COLOR_RESET, childPID, connection->client_addr->host);
+			printf(ANSI_COLOR_GREEN"worker %d::created for %s\n"ANSI_COLOR_RESET, childPID, connection->client_addr->host);
 		} else {
 			if (childPID == -1) {
 				fprintf(stderr, ANSI_COLOR_RED "Could not fork\n" ANSI_COLOR_RESET);
@@ -63,24 +107,24 @@ static void listen_connections(server_config_t *config) {
 
 			while (1) {
 				// si no manda nada cuelga aca
+				printf(ANSI_COLOR_YELLOW"worker %d::waiting for data from %s\n"ANSI_COLOR_RESET, getpid(), connection->client_addr->host);
 				command = comm_receive_data(connection, COMMUNICATION_CLIENT_SERVER, nil);
-				printf(ANSI_COLOR_CYAN"%s says %s\n"ANSI_COLOR_RESET, connection->client_addr->host, command);
+				printf(ANSI_COLOR_CYAN"worker %d::%s says %s\n"ANSI_COLOR_RESET, getpid(), connection->client_addr->host, command);
 
-				result = parse_encoded((const char*)command);
 
-				printf(ANSI_COLOR_CYAN"type: [%s]\n"ANSI_COLOR_RESET, result->kind);
-				printf(ANSI_COLOR_CYAN"value: [%d]\n"ANSI_COLOR_RESET, result->data.i);
+				threads[current_thread] = NEW(pthread_t);
 
-				send_int((result->data.i)*2, connection, COMMUNICATION_SERVER_CLIENT, err);
+				request = NEW(client_request_t);
 
-				// comm_send_data("hola", 4, connection, COMMUNICATION_SERVER_CLIENT, err);
+				request->connection = connection;
+				request->input = (char*)malloc(strlen(command)+1);
+				strcpy(request->input, command);
 
-				if (err->code) {
-					fprintf(stderr, ANSI_COLOR_RED "error: %d\tmsg:%s\n" ANSI_COLOR_RESET, err->code, err->msg);
-				} else {
-					printf(ANSI_COLOR_GREEN"data sent successfully: (%s)\n"ANSI_COLOR_RESET, err->msg);
+				if ( (pthread_ret = pthread_create(threads[current_thread], NULL, server_responder, request)) ) {
+					fprintf(stderr, ANSI_COLOR_RED"worker %d::pthread create returned %d\n"ANSI_COLOR_RED, getpid(), pthread_ret);
 				}
 
+				current_thread++;
 
 
 				free(command);

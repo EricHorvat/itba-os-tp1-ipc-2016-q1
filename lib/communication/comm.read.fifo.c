@@ -131,13 +131,15 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 		// OJO esta linea
 	}
 
-	if ( (fd = open(request_fifo, O_RDONLY)) == -1 ) {
+	printf(ANSI_COLOR_CYAN"will open %s\n"ANSI_COLOR_RESET, request_fifo);
+	if ( (fd = open(request_fifo, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
 		abort();
 		// rellenar el error
 
 		return nil;
 	}
+	printf(ANSI_COLOR_CYAN"opened %s\n"ANSI_COLOR_RESET, request_fifo);
 
 	buffer = (char*)malloc(2048);
 	memset(buffer, '\0', 2048);

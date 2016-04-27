@@ -9,6 +9,10 @@ typedef struct {
 	
 	char *kind;
 
+	/**
+	 * uso esta horripilancia porque no se
+	 * con que me puedo encontrar
+	 */
 	union {
 		int i;
 		double d;
@@ -20,9 +24,6 @@ typedef struct {
 
 } parse_result_t;
 
-typedef union {
-
-} parse_result;
 
 // raw data
 void send_string(char *string, connection_t *conn, comm_sense_t sense, comm_error_t *error);

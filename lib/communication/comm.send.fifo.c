@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/file.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -213,12 +214,12 @@ static void *data_listener(void *data) {
 	}
 
 	printf("[thread] about to read %s\n", fifo);
-	
+	flock(fd, LOCK_EX);
 	do {
 		read(fd, buffer+read_bytes, 1);
 	} while (*(buffer+read_bytes++) != '\0');
 
-	printf("buffer: %s\n", buffer);
+	flock(fd, LOCK_UN);
 
 	close(fd);
 
@@ -270,7 +271,11 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t se
 		return;
 	}
 
+	printf(ANSI_COLOR_BLUE"locking\n"ANSI_COLOR_RESET);
+	flock(fd, LOCK_EX);
 	write_one_by_one(fd, data, size);
+	flock(fd, LOCK_UN);
+	printf(ANSI_COLOR_BLUE"unlocking\n"ANSI_COLOR_RESET);
 
 	close(fd);
 
@@ -315,6 +320,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 		}
 	}
 
+	printf(ANSI_COLOR_MAGENTA"will open %s\n"ANSI_COLOR_RESET, request_fifo);
 	if ( (fd = open(request_fifo, O_WRONLY)) < 0 ) {
 
 		err = NEW(comm_error_t);
@@ -324,7 +330,11 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 		return cb(err, conn, NULL);
 	}
 
+	printf(ANSI_COLOR_MAGENTA"will write %s\n"ANSI_COLOR_RESET, request_fifo);
+	flock(fd, LOCK_EX);
 	write_one_by_one(fd, data, size);
+	flock(fd, LOCK_UN);
+	printf(ANSI_COLOR_MAGENTA"wrote %s\n"ANSI_COLOR_RESET, request_fifo);
 
 	close(fd);
 
