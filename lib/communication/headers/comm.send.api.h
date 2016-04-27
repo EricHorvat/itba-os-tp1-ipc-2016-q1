@@ -1,11 +1,11 @@
-#ifndef __COMMUNICATION_SEND_API__
-#define __COMMUNICATION_SEND_API__
+#ifndef __COMMUNICATION_SEND_API_H__
+#define __COMMUNICATION_SEND_API_H__
 
 #include <comm.addr.h>
 #include <comm.connection.api.h>
 #include <stdlib.h>
 
-typedef void (*comm_callback_t)(comm_error_t *err, comm_addr_t *origin, char *response);
+typedef void (*comm_callback_t)(comm_error_t *err, connection_t *conn, char *response);
 
 /**
  * 

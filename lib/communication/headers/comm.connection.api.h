@@ -1,7 +1,9 @@
-#ifndef __COMMUNICATION_CONNECTION_API__
-#define __COMMUNICATION_CONNECTION_API__
+#ifndef __COMMUNICATION_CONNECTION_API_H__
+#define __COMMUNICATION_CONNECTION_API_H__
 
 #include <comm.errors.h>
+#include <comm.addr.h>
+
 
 typedef enum {
 	CONNECTION_STATE_IDLE,
@@ -21,7 +23,7 @@ typedef struct {
 	connection_state_t state;
 } connection_t;
 
-comm_error_code_t comm_open(connection_t *conn);
-comm_error_code_t comm_close(connection_t *conn);
+comm_error_code_t connection_open(connection_t *conn);
+comm_error_code_t connection_close(connection_t *conn);
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef __COMMUNICATION_H_
-#define __COMMUNICATION_H_
+#ifndef __COMMUNICATION_H__
+#define __COMMUNICATION_H__
 
 #include <comm.addr.h>
 #include <comm.connection.api.h>

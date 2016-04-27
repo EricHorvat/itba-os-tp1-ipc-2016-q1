@@ -1,5 +1,4 @@
 #include <comm.receive.api.h>
-#include <comm.addr.h>
 #include <communication.h>
 
 #include <stdlib.h>
@@ -45,33 +44,32 @@ static unsigned int TIMEOUT = 10;
 	TIMEOUT = t;
 }*/
 
-connection_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
+void comm_listen(connection_t *conn, comm_error_t *error) {
 
 	char *input_fifo;
 	size_t input_fifo_len = 0;
 	int fd;
 	size_t read_bytes = 0;
 	char *buffer;
-	connection_t *connection;
 
-	input_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(server->host)+strlen(FIFO_INPUT_EXTENSION)+strlen(FIFO_EXTENSION);
+	input_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->server_addr->host)+strlen(FIFO_INPUT_EXTENSION)+strlen(FIFO_EXTENSION);
 	input_fifo = (char*)malloc(input_fifo_len+1);
 
-	input_fifo_len = sprintf(input_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, server->host, FIFO_INPUT_EXTENSION, FIFO_EXTENSION);
+	input_fifo_len = sprintf(input_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, FIFO_INPUT_EXTENSION, FIFO_EXTENSION);
 	input_fifo[input_fifo_len] = '\0';
 
 	if (!exists(input_fifo)) {
 
 		if (mkfifo(input_fifo, FIFO_PERMS) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"mkfifo failed\n"ANSI_COLOR_RESET);
-			return nil;
+			return;
 		}
 	}
 
 	if ( (fd = open(input_fifo, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
 		// fill error;
-		return nil;
+		return;
 	}
 
 	buffer = (char*)malloc(2048);
@@ -83,23 +81,25 @@ connection_t* comm_listen(comm_addr_t *server, comm_error_t *error) {
 	} while (*(buffer+read_bytes++) != '\0');
 	// wait for close on the other end
 
-	connection = NEW(connection_t);
-	connection->client_addr = NEW(comm_addr_t);
+	fprintf(stderr, ANSI_COLOR_CYAN"i read: %s\n"ANSI_COLOR_RESET, buffer);
+
+	// connection = NEW(connection_t);
+	// connection->client_addr = (comm_addr_t*)malloc(sizeof(comm_addr_t));
 	// hay que escribir el url fd://anon9137
 
-	
+	conn->client_addr = NEW(comm_addr_t);
 
-	address_from_url(buffer, connection->client_addr);
+	address_from_url(buffer, conn->client_addr);
 
-	connection->server_addr = server;
-	connection->connection_file = input_fifo;
-	connection->state = CONNECTION_STATE_OPEN;
+	// connection->server_addr = server;
+	conn->connection_file = input_fifo;
+	conn->state = CONNECTION_STATE_OPEN;
 
-	return client;
+	printf(ANSI_COLOR_CYAN"prepared connection\n"ANSI_COLOR_RESET);
 	
 }
 
-char* comm_receive_data(comm_addr_t *server, comm_addr_t *client, comm_error_t *error) {
+char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *error) {
 
 	char *request_fifo;
 	size_t request_fifo_len = 0, read_bytes = 0;
@@ -107,15 +107,18 @@ char* comm_receive_data(comm_addr_t *server, comm_addr_t *client, comm_error_t *
 	char *buffer;
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(server->host)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
 	request_fifo = (char*)malloc(request_fifo_len+1);
 
 	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, client->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, client->host, server->host, FIFO_EXTENSION);
+	if (sense == COMMUNICATION_CLIENT_SERVER)
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
+	else
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
 	request_fifo[request_fifo_len] = '\0';
 
 	if (!exists(request_fifo)) {
-		fprintf(stderr, ANSI_COLOR_RED"file does not exist\n"ANSI_COLOR_RESET);
+		fprintf(stderr, ANSI_COLOR_RED"file [%s] does not exist\n"ANSI_COLOR_RESET, request_fifo);
 		// OJO esta linea
 		while (!exists(request_fifo)); // OJO esta linea
 		// OJO esta linea

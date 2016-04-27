@@ -1,5 +1,5 @@
-#ifndef __SERIALIZARTION_H__
-#define __SERIALIZARTION_H__
+#ifndef __SERIALIZATION_H__
+#define __SERIALIZATION_H__
 
 #include <communication.h>
 

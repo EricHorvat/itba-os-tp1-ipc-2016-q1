@@ -1,6 +1,8 @@
 #include <config/server_config.h>
 #include <yaml.h>
 #include <stdio.h>
+#include <getopt.h>
+#include <ctype.h>
 
 #include <utils.h>
 
@@ -110,4 +112,38 @@ int load_configuration(char *filename, server_config_t *config) {
 	fclose(config_file);
 
 	return 0;
+}
+
+char* process_arguments(int argc, char **argv) {
+
+	// http://www.gnu.org/software/libc/manual/html_falsede/Example-of-Getopt.html#Example-of-Getopt
+
+	char *config_file_opt = NULL;
+	int index;
+	int c;
+
+	opterr = 0;
+	while ((c = getopt(argc, argv, "c:")) != -1) {
+		switch (c) {
+			case 'c':
+				config_file_opt = optarg;
+				break;
+			case '?':
+				if (optopt == 'c')
+					fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+				else if (isprint(optopt))
+					fprintf(stderr, "Unkfalsewn option `-%c'.\n", optopt);
+				else
+					fprintf(stderr, "Unkfalsewn option character `\\x%x'.\n", optopt);
+				return NULL;
+			default:
+				printf("Aborting\n");
+				abort();
+		}
+	}
+
+	for (index = optind; index < argc; index++)
+		printf ("falsen-option argument %s\n", argv[index]);
+
+	return config_file_opt;
 }

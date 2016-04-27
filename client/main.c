@@ -18,16 +18,18 @@ typedef struct {
 	char *protocol;
 } client_args_t;
 
-static void response_handler(comm_error_t *err, comm_addr_t *addr, char * response);
+static void response_handler(comm_error_t *err, connection_t *conn, char * response);
 static void process_arguments(int argc, char **argv, client_args_t *);
 static int getrnduser();
 
-static void response_handler(comm_error_t *err, comm_addr_t *addr, char * response) {
+static void response_handler(comm_error_t *err, connection_t *conn, char * response) {
 
 	// printf("%s dice: %s\n", addr->url, response);
 
 	printf("\n*****Err Code: %d\tmsg: %s\n", err->code, err->msg);
 	printf("******response: %s\n", response);
+
+	connection_close(conn);
 
 }
 
@@ -169,7 +171,7 @@ int main (int argc, char **argv) {
 	// 	return addr_error;
 	// }
 
-	if ( (conn_error = comm_open(connection) != 0) ) {
+	if ( (conn_error = connection_open(connection) != 0) ) {
 		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
 	}
 

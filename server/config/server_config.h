@@ -12,5 +12,6 @@ typedef struct {
 } server_config_t;
 
 int load_configuration(char *filename, server_config_t *config);
+char* process_arguments(int argc, char **argv);
 
 #endif

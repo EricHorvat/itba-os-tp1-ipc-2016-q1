@@ -49,8 +49,8 @@ void current_utc_time(struct timespec *ts) {
 
 typedef struct {
 	comm_callback_t cb;
-	comm_addr_t* origin;
-	comm_addr_t* endpoint;
+	connection_t *conn;
+	comm_sense_t sense;
 } comm_thread_info_t;
 
 typedef struct {
@@ -173,19 +173,24 @@ static void *data_listener(void *data) {
 
 	err = NEW(comm_error_t);
 
+	
 	// fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION));
-	fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(info->endpoint->host)+strlen(info->origin->host)+strlen(FIFO_EXTENSION);
-	fifo = (char*)malloc(fifo_len+1);
+	fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(info->conn->client_addr->host)+strlen(info->conn->server_addr->host)+strlen(FIFO_EXTENSION);
+	fifo = (char*)malloc(fifo_len+2);
 
 	if (!fifo) {
-		fprintf(stderr, "MemoryError: FIFO [%s] could not be allocated\n", fifo);
+		fprintf(stderr, ANSI_COLOR_RED"MemoryError: FIFO [%s] could not be allocated\n"ANSI_COLOR_RESET, fifo);
 		abort();
 	}
 
 	printf("[thread] Writing FIFO\n");
 
 	// sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
-	sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->endpoint->host, info->origin->host, FIFO_EXTENSION);
+	// sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->endpoint->host, info->origin->host, FIFO_EXTENSION);
+	if (info->sense != COMMUNICATION_CLIENT_SERVER)
+		fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->client_addr->host, info->conn->server_addr->host, FIFO_EXTENSION);
+	else
+		fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->server_addr->host, info->conn->client_addr->host, FIFO_EXTENSION);
 
 	if ( (fd = open(fifo, O_RDONLY)) == -1) {
 
@@ -193,8 +198,8 @@ static void *data_listener(void *data) {
 
 		unlink(fifo);
 		err->code = 2;
-		err->msg = "[thread] FIFO could not be written";
-		info->cb(err, info->endpoint, NULL);
+		err->msg = "[thread] FIFO could not be opened";
+		info->cb(err, info->conn, NULL);
 
 		pthread_exit(NULL);
 
@@ -215,7 +220,7 @@ static void *data_listener(void *data) {
 	err->code = 0;
 	err->msg = "Operacion Exitosa";
 
-	info->cb(err, info->endpoint, buffer);
+	info->cb(err, info->conn, buffer);
 
 	pthread_exit(NULL);
 
@@ -223,7 +228,7 @@ static void *data_listener(void *data) {
 
 }
 
-void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_error_t *error) {
+void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
 
 	char *request_fifo;
 	size_t request_fifo_len = 0;
@@ -233,10 +238,14 @@ void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *e
 		error = NEW(comm_error_t);
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
 	request_fifo = (char*)malloc(request_fifo_len+2);
 
-	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
+	// request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
+	if (sense == COMMUNICATION_CLIENT_SERVER)
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
+	else
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
 	request_fifo[request_fifo_len] = '\0';
 
 	if (!exists(request_fifo)) {
@@ -265,7 +274,7 @@ void comm_send_data(void *data, size_t size, comm_addr_t *origin, comm_addr_t *e
 
 }
 
-void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_addr_t *endpoint, comm_callback_t cb) {
+void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
 
 	char *request_fifo;
 	size_t request_fifo_len = 0;
@@ -276,11 +285,14 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 	comm_thread_info_t *thread_arg;
 
 	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_EXTENSION);
+	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
 	request_fifo = (char*)malloc(request_fifo_len+2);
 
 	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
+	if (sense == COMMUNICATION_CLIENT_SERVER)
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
+	else
+		request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
 	request_fifo[request_fifo_len] = '\0';
 
 	if (!exists(request_fifo)) {
@@ -291,7 +303,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 			err->code = 4;
 			err->msg = "mkFIFO failed";
-			return cb(err, endpoint, NULL);
+			return cb(err, conn, NULL);
 		}
 	}
 
@@ -301,7 +313,7 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 		err->code = 4;
 		err->msg = "Response FIFO could not be opened";
-		return cb(err, endpoint, NULL);
+		return cb(err, conn, NULL);
 	}
 
 	write_one_by_one(fd, data, size);
@@ -312,8 +324,8 @@ void comm_send_data_async(void * data, size_t size, comm_addr_t *origin, comm_ad
 
 	// fill in thread arguments
 	thread_arg->cb = cb;
-	thread_arg->origin = origin;
-	thread_arg->endpoint = endpoint;
+	thread_arg->conn = conn;
+	thread_arg->sense = sense;
 
 	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
 		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);

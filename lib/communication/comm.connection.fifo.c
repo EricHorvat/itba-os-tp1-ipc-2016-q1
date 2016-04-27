@@ -1,6 +1,6 @@
-#include <conn.connection.h>
-
-#include <conn.fifo.h>
+#include <comm.connection.api.h>
+#include <comm.addr.h>
+#include <comm.fifo.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -13,7 +13,7 @@
 #define SERVER_OFFLINE 3
 #define SERVER_BUSY 4
 
-comm_error_code_t conn_open(connection_t *conn) {
+comm_error_code_t connection_open(connection_t *conn) {
 
 	size_t conn_file_len = 0, request_fifo_len;
 	char *request_fifo;
@@ -58,7 +58,7 @@ comm_error_code_t conn_open(connection_t *conn) {
 
 }
 
-comm_error_code_t conn_close(connection_t *conn) {
+comm_error_code_t connection_close(connection_t *conn) {
 
 	char *request_fifo, *response_fifo;
 	size_t request_fifo_len, response_fifo_len;	
