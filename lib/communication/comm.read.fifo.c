@@ -46,6 +46,10 @@ static unsigned int TIMEOUT = 10;
 
 void comm_listen(connection_t *conn, comm_error_t *error) {
 
+}
+
+void comm_accept(connection_t *conn, comm_error_t *error) {
+
 	char *input_fifo;
 	size_t input_fifo_len = 0;
 	int fd;

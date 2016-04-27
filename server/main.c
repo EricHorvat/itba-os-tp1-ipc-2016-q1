@@ -35,9 +35,11 @@ static void listen_connections(server_config_t *config) {
 
 	printf(ANSI_COLOR_GREEN"listening on name: %s\n"ANSI_COLOR_RESET, connection->server_addr->host);
 
+	comm_listen(connection, nil);
+
 	while (1) {
 		printf(ANSI_COLOR_YELLOW"waiting for connections\n"ANSI_COLOR_RESET);
-		comm_listen(connection, nil);
+		comm_accept(connection, nil);
 
 		if (!connection) {
 			fprintf(stderr, ANSI_COLOR_RED"connection is null\n"ANSI_COLOR_RESET);
