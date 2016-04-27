@@ -64,9 +64,11 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 		}
 	}
 
-	conn->connection_file = input_fifo;
+	conn->connection_file = (char*)malloc(input_fifo_len+1);
+	strcpy(conn->connection_file, input_fifo);
 	conn->state = CONNECTION_STATE_IDLE;
 
+	free(input_fifo);
 }
 
 void comm_accept(connection_t *conn, comm_error_t *error) {
@@ -96,6 +98,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	address_from_url(buffer, conn->client_addr);
 
+	free(buffer);
+
 	conn->state = CONNECTION_STATE_OPEN;
 	
 }
@@ -120,6 +124,8 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 
 	if (!exists(request_fifo)) {
 		fprintf(stderr, ANSI_COLOR_RED"file [%s] does not exist\n"ANSI_COLOR_RESET, request_fifo);
+		
+
 		// OJO esta linea
 		while (!exists(request_fifo)); // OJO esta linea
 		// OJO esta linea

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <types.h>
 
 // #include "../lib/communication/headers/communication.h"
 #include <serialization.h>
@@ -113,6 +114,8 @@ int main (int argc, char **argv) {
 	comm_addr_error_t addr_error;
 	char *client_url, *server_url;
 
+	command_get_t *get_cmd;
+
 	int conn_error;
 
 	int a;
@@ -175,8 +178,14 @@ int main (int argc, char **argv) {
 		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
 	}
 
+	get_cmd = NEW(command_get_t);
+
+	get_cmd->path = "/martin/home/etc";
+
+	// send_cmd_get(get_cmd, connection, COMMUNICATION_CLIENT_SERVER, nil);
+
 	send_int_async(a, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
-	send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	// send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
 
 	printf("Something\n");
 

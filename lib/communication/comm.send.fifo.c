@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <poll.h>
 // https://gist.github.com/jbenet/1087739
 #include <time.h>
 #include <sys/time.h>
@@ -191,10 +190,16 @@ static void *data_listener(void *data) {
 		fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->client_addr->host, info->conn->server_addr->host, FIFO_EXTENSION);
 	else
 		fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->server_addr->host, info->conn->client_addr->host, FIFO_EXTENSION);
+	fifo[fifo_len] = '\0';
+
+	// OJOOOOOO
+	if (!exists(fifo)) // OJOOOOOO
+		while (!exists(fifo)); // OJOOOOOO
+	// OJOOOOOO
 
 	if ( (fd = open(fifo, O_RDONLY)) == -1) {
 
-		printf("cannot open %s\n", fifo);
+		printf("cannot open %s with error:%d msg:%s\n", fifo, errno, strerror(errno));
 
 		unlink(fifo);
 		err->code = 2;
@@ -206,6 +211,8 @@ static void *data_listener(void *data) {
 		return nil;
 
 	}
+
+	printf("[thread] about to read %s\n", fifo);
 	
 	do {
 		read(fd, buffer+read_bytes, 1);
@@ -270,6 +277,8 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t se
 	error->code = 0;
 	error->msg = "Todo OK";
 
+	free(request_fifo);
+
 }
 
 void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
@@ -277,6 +286,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 	char *request_fifo;
 	size_t request_fifo_len = 0;
 	int fd;
+
 	int pthread_ret;
 	pthread_t listener;
 	comm_error_t *err;
@@ -328,5 +338,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
 		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);
 	}
+
+	free(request_fifo);
 
 }

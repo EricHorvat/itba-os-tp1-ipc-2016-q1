@@ -16,12 +16,15 @@
 
 #include <utils.h>
 
+#include <serialization.h>
+
 static void listen_connections(server_config_t *config) {
 
 	connection_t *connection;
 	pid_t childPID;
 	char *command;
 	comm_error_t *err;
+	parse_result_t *result;
 
 	err = NEW(comm_error_t);
 	connection = NEW(connection_t);
@@ -63,13 +66,24 @@ static void listen_connections(server_config_t *config) {
 				command = comm_receive_data(connection, COMMUNICATION_CLIENT_SERVER, nil);
 				printf(ANSI_COLOR_CYAN"%s says %s\n"ANSI_COLOR_RESET, connection->client_addr->host, command);
 
-				comm_send_data("hola", 4, connection, COMMUNICATION_SERVER_CLIENT, err);
+				result = parse_encoded((const char*)command);
+
+				printf(ANSI_COLOR_CYAN"type: [%s]\n"ANSI_COLOR_RESET, result->kind);
+				printf(ANSI_COLOR_CYAN"value: [%d]\n"ANSI_COLOR_RESET, result->data.i);
+
+				send_int((result->data.i)*2, connection, COMMUNICATION_SERVER_CLIENT, err);
+
+				// comm_send_data("hola", 4, connection, COMMUNICATION_SERVER_CLIENT, err);
 
 				if (err->code) {
 					fprintf(stderr, ANSI_COLOR_RED "error: %d\tmsg:%s\n" ANSI_COLOR_RESET, err->code, err->msg);
 				} else {
 					printf(ANSI_COLOR_GREEN"data sent successfully: (%s)\n"ANSI_COLOR_RESET, err->msg);
 				}
+
+
+
+				free(command);
 			}
 
 			
