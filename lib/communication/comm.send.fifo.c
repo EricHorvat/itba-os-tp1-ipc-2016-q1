@@ -215,8 +215,6 @@ static void *data_listener(void *data) {
 
 	close(fd);
 
-	unlink(fifo);
-
 	err->code = 0;
 	err->msg = "Operacion Exitosa";
 

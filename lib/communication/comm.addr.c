@@ -8,8 +8,6 @@
 
 comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 
-	fprintf(stderr, "addr from url\n");
-
 	// Read protocol first
 	unsigned int index = 0;
 	char *start, *offset;
@@ -41,10 +39,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	}
 	++offset;
 	++offset;
-	fprintf(stderr, "before malloc\n");
 	address->protocol = (char*)malloc(index);
 	strncpy(address->protocol, start, index);
-	fprintf(stderr, ANSI_COLOR_YELLOW"addr::protocol = %s\n"ANSI_COLOR_RESET, address->protocol);
 
 	// Read host
 	start = offset;
@@ -57,7 +53,6 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	
 	address->host = (char*)malloc(index);
 	strncpy(address->host, start, index);
-	printf(ANSI_COLOR_YELLOW"addr::host = %s\n"ANSI_COLOR_RESET, address->host);
 
 	if (*offset == NEWLINE || *offset == EOF || *offset == ZERO) {
 		return 0;

@@ -46,21 +46,15 @@ static unsigned int TIMEOUT = 10;
 
 void comm_listen(connection_t *conn, comm_error_t *error) {
 
-}
-
-void comm_accept(connection_t *conn, comm_error_t *error) {
-
 	char *input_fifo;
 	size_t input_fifo_len = 0;
-	int fd;
-	size_t read_bytes = 0;
-	char *buffer;
 
 	input_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->server_addr->host)+strlen(FIFO_INPUT_EXTENSION)+strlen(FIFO_EXTENSION);
 	input_fifo = (char*)malloc(input_fifo_len+1);
 
 	input_fifo_len = sprintf(input_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, FIFO_INPUT_EXTENSION, FIFO_EXTENSION);
 	input_fifo[input_fifo_len] = '\0';
+
 
 	if (!exists(input_fifo)) {
 
@@ -70,8 +64,19 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 		}
 	}
 
-	if ( (fd = open(input_fifo, O_RDONLY)) < 0 ) {
-		fprintf(stderr, ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
+	conn->connection_file = input_fifo;
+	conn->state = CONNECTION_STATE_IDLE;
+
+}
+
+void comm_accept(connection_t *conn, comm_error_t *error) {
+
+	int fd;
+	size_t read_bytes = 0;
+	char *buffer;
+
+	if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
+		fprintf(stderr, ANSI_COLOR_RED"open failed %s\n"ANSI_COLOR_RESET, conn->connection_file);
 		// fill error;
 		return;
 	}
@@ -85,21 +90,13 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	} while (*(buffer+read_bytes++) != '\0');
 	// wait for close on the other end
 
-	fprintf(stderr, ANSI_COLOR_CYAN"i read: %s\n"ANSI_COLOR_RESET, buffer);
-
-	// connection = NEW(connection_t);
-	// connection->client_addr = (comm_addr_t*)malloc(sizeof(comm_addr_t));
 	// hay que escribir el url fd://anon9137
 
 	conn->client_addr = NEW(comm_addr_t);
 
 	address_from_url(buffer, conn->client_addr);
 
-	// connection->server_addr = server;
-	conn->connection_file = input_fifo;
 	conn->state = CONNECTION_STATE_OPEN;
-
-	printf(ANSI_COLOR_CYAN"prepared connection\n"ANSI_COLOR_RESET);
 	
 }
 
