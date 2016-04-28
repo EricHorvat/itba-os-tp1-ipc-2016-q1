@@ -20,6 +20,8 @@ typedef struct {
 	char *input;
 } client_request_t;
 
+pthread_mutex_t lock;
+
 static void* server_responder(void* data) {
 
 	client_request_t *req;
@@ -34,23 +36,27 @@ static void* server_responder(void* data) {
 
 	result = parse_encoded((const char*)req->input);
 
-	printf(ANSI_COLOR_CYAN"worker %d::thread %d::client sent: [%s]\n"ANSI_COLOR_RESET, pid, (int)self, result->kind);
+	printf(ANSI_COLOR_BLUE"worker %d::thread %ld::client sent: [%s]\n"ANSI_COLOR_RESET, pid, self, result->kind);
 
+	pthread_mutex_lock(&lock);
 	if (strcmp(result->kind, "int") == 0) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %d\n"ANSI_COLOR_RESET, pid, (int)self, result->data.i);
+		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %d\n"ANSI_COLOR_RESET, pid, self, result->data.i);
 		send_int((result->data.i)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
+		printf(ANSI_COLOR_MAGENTA"worker %d::thread %ld::client i say: %d\n"ANSI_COLOR_RESET, pid, self, (result->data.i)*2);
 	} else if ( strcmp(result->kind, "double") == 0) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %f\n"ANSI_COLOR_RESET, pid, (int)self, result->data.d);
+		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %f\n"ANSI_COLOR_RESET, pid, self, result->data.d);
 		send_double((result->data.d)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
+		printf(ANSI_COLOR_MAGENTA"worker %d::thread %ld::client i say: %f\n"ANSI_COLOR_RESET, pid, self, (result->data.d)*2);
 	} else if ( strcmp(result->kind, "string") == 0 ) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %d::client says: %s\n"ANSI_COLOR_RESET, pid, (int)self, result->data.str);
+		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %s\n"ANSI_COLOR_RESET, pid, self, result->data.str);
 		send_string(result->data.str+2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
 	}
+	pthread_mutex_unlock(&lock);
 
 	if (err->code) {
-		fprintf(stderr, ANSI_COLOR_RED "worker %d::thread %d::error: %d\tmsg:%s\n" ANSI_COLOR_RESET, pid, (int)self, err->code, err->msg);
+		fprintf(stderr, ANSI_COLOR_RED "worker %d::thread %ld::error: %d\tmsg:%s\n" ANSI_COLOR_RESET, pid, self, err->code, err->msg);
 	} else {
-		printf(ANSI_COLOR_GREEN"worker %d::thread %d::data sent successfully: (%s)\n"ANSI_COLOR_RESET, pid, (int)self, err->msg);
+		printf(ANSI_COLOR_GREEN"worker %d::thread %ld::data sent successfully: (%s)\n"ANSI_COLOR_RESET, pid, self, err->msg);
 	}
 
 	return nil;
@@ -105,6 +111,11 @@ static void listen_connections(server_config_t *config) {
 				abort();
 			}
 
+			if (pthread_mutex_init(&lock, NULL) != 0) {
+			    printf("\n mutex init failed\n");
+			    exit(3);
+			}
+
 			while (1) {
 				// si no manda nada cuelga aca
 				printf(ANSI_COLOR_YELLOW"worker %d::waiting for data from %s\n"ANSI_COLOR_RESET, getpid(), connection->client_addr->host);
@@ -119,6 +130,8 @@ static void listen_connections(server_config_t *config) {
 				request->connection = connection;
 				request->input = (char*)malloc(strlen(command)+1);
 				strcpy(request->input, command);
+
+				
 
 				if ( (pthread_ret = pthread_create(threads[current_thread], NULL, server_responder, request)) ) {
 					fprintf(stderr, ANSI_COLOR_RED"worker %d::pthread create returned %d\n"ANSI_COLOR_RED, getpid(), pthread_ret);

@@ -142,5 +142,9 @@ static int cmd_sendi(connection_t *conn, char* args) {
 
 	printf("result of kind %s\n", presult->kind);
 
+	if (strcmp(presult->kind, "int") == 0) {
+		printf(ANSI_COLOR_GREEN"response: %d\n"ANSI_COLOR_RESET, presult->data.i);
+	}
+
 	return 0;
 }

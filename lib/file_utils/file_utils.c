@@ -1,4 +1,5 @@
 #include <file_utils.h>
+#include <stdlib.h>
 
 /**
  * checks whether a file exists
@@ -22,8 +23,17 @@ bool exists(char* path) {
  */
 void write_one_by_one(int fd, void *data, size_t size) {
 	size_t written = 0;
-	while (written < size) {
+	while (written < size && *(char*)(data+written) != '\0') {
 		write(fd, data+written, 1);
 		written++;
+	}
+	write(fd, "\0", 1);
+}
+
+void busy_wait_file_exists(char *path) {
+	if (!exists(path)) {
+		while (!exists(path)) {
+			sleep(1);
+		}
 	}
 }

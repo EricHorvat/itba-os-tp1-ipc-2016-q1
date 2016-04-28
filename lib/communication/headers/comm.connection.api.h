@@ -21,6 +21,11 @@ typedef struct {
 	comm_addr_t *server_addr;
 	char *connection_file;
 	connection_state_t state;
+
+	int req_fd;
+	int res_fd;
+
+	comm_sense_t sense;
 } connection_t;
 
 comm_error_code_t connection_open(connection_t *conn);

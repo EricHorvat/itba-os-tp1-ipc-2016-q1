@@ -128,8 +128,8 @@ int main (int argc, char **argv) {
 
 	shell_buffer = (char*)malloc(2048);
 	memset(shell_buffer, ZERO, 2048);
-
-	/*while (1) {
+/*
+	while (1) {
 
 		printf("> ");
 
@@ -191,15 +191,8 @@ int main (int argc, char **argv) {
 
 	// send_cmd_get(get_cmd, connection, COMMUNICATION_CLIENT_SERVER, nil);
 
-	send_double_async(a*2.0, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
-
-	printf("waiting....\n");
-	sleep(1);
-	printf("stopped waiting\n");
-
-	send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
-
-	printf("Something\n");
+	send_double_async(20, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_double_async(3, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
 
 	sleep(50);
 
