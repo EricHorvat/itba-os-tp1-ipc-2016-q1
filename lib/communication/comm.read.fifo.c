@@ -132,6 +132,7 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 			sleep(1); // OJO esta linea
 		} // OJO esta linea
 		// OJO esta linea
+		printf(ANSI_COLOR_GREEN"file [%s] now exists\n"ANSI_COLOR_RESET, request_fifo);
 	}
 
 	printf(ANSI_COLOR_CYAN"will open %s\n"ANSI_COLOR_RESET, request_fifo);

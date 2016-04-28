@@ -127,13 +127,13 @@ int main (int argc, char **argv) {
 
 			switch (c) {
 				case NEWLINE:
-					putchar('\n');
+					// putchar('\n');
 					command_read = yes;
 					break;
 				case '\b':
 					if (shell_index > 0)
 						shell_index--;
-					putchar('\b');
+					// putchar('\b');
 					break;
 				case '\r':
 					break;
@@ -142,7 +142,7 @@ int main (int argc, char **argv) {
 				default:
 					shell_buffer[shell_index++] = c;
 					shell_buffer[shell_index] = 0;
-					putchar(c);
+					// putchar(c);
 					break;
 			}
 		} while ( c != EOF && !command_read);

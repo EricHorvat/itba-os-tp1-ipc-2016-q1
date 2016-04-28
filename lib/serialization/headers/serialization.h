@@ -57,4 +57,7 @@ const char* stringify_command_post(command_post_t *cmd);
 // parse
 parse_result_t *parse_encoded(const char *json);
 
+// receive
+parse_result_t *receive(connection_t *conn, comm_sense_t sense, comm_error_t *error);
+
 #endif

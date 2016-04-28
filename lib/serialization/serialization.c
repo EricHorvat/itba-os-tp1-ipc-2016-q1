@@ -166,6 +166,19 @@ parse_result_t *parse_encoded(const char *json) {
 	return result;
 }
 
+parse_result_t *receive(connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+
+	char *response;
+
+	response = comm_receive_data(conn, sense, error);
+
+	if (error->code)
+		return null;
+
+	return parse_encoded(response);
+
+}
+
 // Sync
 
 void send_string(char *string, connection_t *conn, comm_sense_t sense, comm_error_t *error) {

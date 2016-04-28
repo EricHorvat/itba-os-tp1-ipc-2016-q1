@@ -14,7 +14,7 @@ static bool initialized_commands = no;
 static void initialize_commands();
 
 static int cmd_open(connection_t *, char *args);
-static int sendi(connection_t *conn, char* args);
+static int cmd_sendi(connection_t *conn, char* args);
 
 static client_command_t **commands;
 
@@ -36,7 +36,7 @@ static void initialize_commands() {
 
 	commands[i] = NEW(client_command_t);
 	commands[i]->name = "sendi";
-	commands[i]->cmd = &cmd_open;
+	commands[i]->cmd = &cmd_sendi;
 	commands[i++]->help = "Sendi help";
 
 	commands[i] = NEW(client_command_t);
@@ -111,10 +111,35 @@ static int cmd_open(connection_t *conn, char *args) {
 
 }
 
-static int sendi(connection_t *conn, char* args) {
+static int cmd_sendi(connection_t *conn, char* args) {
 
+	comm_error_t *err;
+	parse_result_t *presult;
 
-	send_int(atoi(args), conn, COMMUNICATION_CLIENT_SERVER, nil);
+	if (conn->state != CONNECTION_STATE_OPEN) {
+
+		printf(ANSI_COLOR_YELLOW"Please open connection first\n"ANSI_COLOR_RESET);
+
+		return 1;
+	}
+
+	err = NEW(comm_error_t);
+
+	send_int(atoi(args), conn, COMMUNICATION_CLIENT_SERVER, err);
+
+	if (err->code) {
+		printf(ANSI_COLOR_RED"send failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		return err->code;
+	}
+
+	presult = receive(conn, COMMUNICATION_SERVER_CLIENT, err);
+
+	if (err->code) {
+		printf(ANSI_COLOR_RED"receive failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		return err->code;
+	}
+
+	printf("result of kind %s\n", presult->kind);
 
 	return 0;
 }

@@ -138,6 +138,8 @@ static void listen_connections(server_config_t *config) {
 			// respond
 			// 
 			
+			printf("worker %d::ending\n", getpid());
+
 			exit(0);
 		}
 	}

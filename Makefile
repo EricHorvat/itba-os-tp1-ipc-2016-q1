@@ -39,7 +39,7 @@ wipe:
 	rm -f /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 clean:
-	rm -rf *.o client/*.o server/*.o lib/communication/*.o lib/serialization/*.o lib/sqlite/*.o
+	rm -rf *.o client/*.o server/*.o lib/communication/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o
 	rm -f /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 .PHONY: all clean
