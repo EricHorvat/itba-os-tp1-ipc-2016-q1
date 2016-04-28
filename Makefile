@@ -2,8 +2,8 @@ GCC=gcc
 CFLAGS=-I./ -I./server -I./client -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
 GCCFLAGS=-pthread -pthread
 
-IMPORT_CFLAGS=$(shell pkg-config --cflags glib-2.0) $(shell pkg-config --cflags json-c)
-IMPORT_LDFLAGS=$(shell pkg-config --libs glib-2.0) $(shell pkg-config --libs json-c) $(shell pkg-config --libs yaml-0.1)
+IMPORT_CFLAGS=$(shell pkg-config --cflags json-c)
+IMPORT_LDFLAGS=$(shell pkg-config --libs json-c) $(shell pkg-config --libs yaml-0.1)
 
 
 

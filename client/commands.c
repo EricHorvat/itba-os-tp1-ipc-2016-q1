@@ -105,6 +105,7 @@ static int cmd_open(connection_t *conn, char *args) {
 
 	if ( (conn_error = connection_open(conn) != 0) ) {
 		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
+		return conn_error;
 	}
 
 	return 0;

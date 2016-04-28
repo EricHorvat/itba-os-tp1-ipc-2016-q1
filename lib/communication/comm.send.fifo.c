@@ -78,7 +78,7 @@ void set_timeout(unsigned int t) {
 **/
 
 static void *data_listener(void *);
-static void *pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t);
+// static void *pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t);
 static void *data_writer(void *data);
 // static void write_one_by_one(int fd, void *data, size_t size);
 static int create_fifo(char *fifo);
@@ -117,45 +117,45 @@ static int create_fifo(char *fifo) {
  * @param  t      timeout
  * @return        null if timeout was reached otherwise the result of func
  */
-static void * pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t) {
+// static void * pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t) {
 
-	struct timespec ts;
-	int thread_err;
-	void *ret;
+// 	struct timespec ts;
+// 	int thread_err;
+// 	void *ret;
 
-	current_utc_time(&ts);
-	ts.tv_sec += t;
+// 	current_utc_time(&ts);
+// 	ts.tv_sec += t;
 
-	#ifdef __MACH__
-	pthread_mutex_lock(&calculating);
-#endif
+// 	#ifdef __MACH__
+// 	pthread_mutex_lock(&calculating);
+// #endif
 
-	pthread_create(&thread, NULL, func, data);
+// 	pthread_create(&thread, NULL, func, data);
 
-#ifdef __MACH__
-	thread_err = pthread_cond_timedwait(&done, &calculating, &ts);
+// #ifdef __MACH__
+// 	thread_err = pthread_cond_timedwait(&done, &calculating, &ts);
 
-	if (thread_err == ETIMEDOUT) {
-		fprintf(stderr, "%s: calculation timed out\n", __func__);
-		return null;
-	}
+// 	if (thread_err == ETIMEDOUT) {
+// 		fprintf(stderr, "%s: calculation timed out\n", __func__);
+// 		return null;
+// 	}
 
-	if (!thread_err) {
-		pthread_mutex_unlock(&calculating);
-		pthread_join(thread, &ret);
-	}
+// 	if (!thread_err) {
+// 		pthread_mutex_unlock(&calculating);
+// 		pthread_join(thread, &ret);
+// 	}
 
-#else
-	thread_err = pthread_timedjoin_np(thread, &ret, &ts);
+// #else
+// 	thread_err = pthread_timedjoin_np(thread, &ret, &ts);
 
-	if (writer_thread_err != 0) {
+// 	if (thread_err != 0) {
 		
-		return null;
-	}
-#endif
+// 		return null;
+// 	}
+// #endif
 
-	return ret;
-}
+// 	return ret;
+// }
 
 static void *data_listener(void *data) {
 
@@ -214,14 +214,12 @@ static void *data_listener(void *data) {
 	}
 
 	printf("[thread] about to read %s\n", fifo);
-	flock(fd, LOCK_EX);
+	//flock(fd, LOCK_EX);
 	do {
 		read(fd, buffer+read_bytes, 1);
 	} while (*(buffer+read_bytes++) != '\0');
+	//flock(fd, LOCK_UN);
 
-	flock(fd, LOCK_UN);
-
-	close(fd);
 
 	err->code = 0;
 	err->msg = "Operacion Exitosa";
@@ -271,11 +269,17 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t se
 		return;
 	}
 
-	printf(ANSI_COLOR_BLUE"locking\n"ANSI_COLOR_RESET);
+	printf(ANSI_COLOR_BLUE"locking %s\n"ANSI_COLOR_RESET, request_fifo);
+	
+	printf("A\n");
 	flock(fd, LOCK_EX);
+
+	printf("S\n");
 	write_one_by_one(fd, data, size);
+	
+	printf("Ñ\n");
 	flock(fd, LOCK_UN);
-	printf(ANSI_COLOR_BLUE"unlocking\n"ANSI_COLOR_RESET);
+	printf(ANSI_COLOR_BLUE"unlocking %s\n"ANSI_COLOR_RESET, request_fifo);
 
 	close(fd);
 
@@ -290,7 +294,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 
 	char *request_fifo;
 	size_t request_fifo_len = 0;
-	int fd;
+	int fd = 0;
 
 	int pthread_ret;
 	pthread_t listener;

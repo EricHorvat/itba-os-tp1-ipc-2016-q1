@@ -19,7 +19,9 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	}
 
 	address->valid = yes;
-	address->url = url;
+	address->url = (char*)malloc(strlen(url)+1);
+	memset(address->url, ZERO, strlen(url)+1);
+	strcpy(address->url, url);
 
 	while (*offset != COLON && *offset != NEWLINE && *offset != EOF && *offset != ZERO) {
 		++offset;
@@ -39,7 +41,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	}
 	++offset;
 	++offset;
-	address->protocol = (char*)malloc(index);
+	address->protocol = (char*)malloc(index+1);
+	memset(address->protocol, ZERO, index+1);
 	strncpy(address->protocol, start, index);
 
 	// Read host
@@ -51,7 +54,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 		++index;
 	}
 	
-	address->host = (char*)malloc(index);
+	address->host = (char*)malloc(index+1);
+	memset(address->host, ZERO, index+1);
 	strncpy(address->host, start, index);
 
 	if (*offset == NEWLINE || *offset == EOF || *offset == ZERO) {

@@ -96,7 +96,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	conn->client_addr = NEW(comm_addr_t);
 
-	address_from_url(buffer, conn->client_addr);
+	address_from_url(buffer, conn->client_addr);	
 
 	free(buffer);
 
@@ -141,7 +141,7 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 		abort();
 		// rellenar el error
 
-		return nil;
+		return nil; 
 	}
 	printf(ANSI_COLOR_CYAN"opened %s\n"ANSI_COLOR_RESET, request_fifo);
 
@@ -155,4 +155,3 @@ char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *er
 	return buffer;
 
 }
-
