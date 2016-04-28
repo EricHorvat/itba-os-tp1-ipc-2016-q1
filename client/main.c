@@ -191,9 +191,18 @@ int main (int argc, char **argv) {
 
 	// send_cmd_get(get_cmd, connection, COMMUNICATION_CLIENT_SERVER, nil);
 
-	send_double_async(20, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
-	send_double_async(3, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(1, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(2, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(3, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(4, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(5, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(6, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(7, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(8, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(9, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
+	send_int_async(0, connection, COMMUNICATION_CLIENT_SERVER, &response_handler);
 
-	sleep(50);
+
+	sleep(100);
 
 }

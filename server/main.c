@@ -22,6 +22,8 @@ typedef struct {
 
 pthread_mutex_t lock;
 
+int j = 0;
+
 static void* server_responder(void* data) {
 
 	client_request_t *req;
@@ -38,6 +40,10 @@ static void* server_responder(void* data) {
 
 	printf(ANSI_COLOR_BLUE"worker %d::thread %ld::client sent: [%s]\n"ANSI_COLOR_RESET, pid, self, result->kind);
 
+	pthread_mutex_lock(&lock);
+	j++;
+	pthread_mutex_unlock(&lock);
+	if (j%2==0)sleep(5);
 	pthread_mutex_lock(&lock);
 	if (strcmp(result->kind, "int") == 0) {
 		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %d\n"ANSI_COLOR_RESET, pid, self, result->data.i);
