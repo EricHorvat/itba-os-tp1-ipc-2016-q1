@@ -14,18 +14,18 @@ ifdef SOCKET
 $(error Cannot build FIFO and SOCKET. Select only one)
 else
 # fifo
-LIBRARY_SOURCES=$(wildcard lib/communication/fifo/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/file_utils/*.c)
+LIBRARY_SOURCES=$(wildcard lib/communication/fifo/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/sqlite/*.c) $(wildcard lib/file_utils/*.c)
 GCCMACROS+=-D__FIFO__
 endif
 else
 ifdef SOCKET
 # socket
-LIBRARY_SOURCES=$(wildcard lib/communication/socket/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/file_utils/*.c)
+LIBRARY_SOURCES=$(wildcard lib/communication/socket/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/sqlite/*.c) $(wildcard lib/file_utils/*.c)
 GCCMACROS+=-D__SOCKET__
 else
 # fifo
 $(info Neither FIFO nor SOCKET was chosen. Defaulting to FIFO)
-LIBRARY_SOURCES=$(wildcard lib/communication/fifo/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/file_utils/*.c)
+LIBRARY_SOURCES=$(wildcard lib/communication/fifo/*.c) $(wildcard lib/serialization/*.c) $(wildcard lib/sqlite/*.c) $(wildcard lib/file_utils/*.c)
 GCCMACROS+=-D__FIFO__
 endif
 endif

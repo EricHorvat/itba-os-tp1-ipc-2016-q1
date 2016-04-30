@@ -12,6 +12,7 @@
 #include <config/server_config.h>
 #include <utils.h>
 #include <serialization.h>
+#include <sqlite.h>
 
 #define MIN_THREADS 10
 
@@ -22,7 +23,7 @@ typedef struct {
 
 pthread_mutex_t lock;
 
-int j = 0;
+sql_connection_t *sql_connection;
 
 static void* server_responder(void* data) {
 
@@ -44,10 +45,6 @@ static void* server_responder(void* data) {
 	INFO("worker %d::thread %ld::client sent: [%s]\n", pid, self, result->kind);
 
 	pthread_mutex_lock(&lock);
-	j++;
-	pthread_mutex_unlock(&lock);
-	if (j%2==0)sleep(5);
-	pthread_mutex_lock(&lock);
 	if (strcmp(result->kind, "int") == 0) {
 		INFO("worker %d::thread %ld::client says: %d\n", pid, self, result->data.i);
 		send_int((result->data.i)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
@@ -61,6 +58,9 @@ static void* server_responder(void* data) {
 		send_string(result->data.str+2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
 	}
 	pthread_mutex_unlock(&lock);
+
+
+
 
 	if (err->code) {
 		ERROR("worker %d::thread %ld::error: %d\tmsg:%s\n", pid, self, err->code, err->msg);
@@ -186,6 +186,21 @@ int main(int argc, char **argv) {
 		load_configuration(DEFAULT_CONFIG_FILE, config);
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
+
+	sql_connection = NEW(sql_connection_t);
+	sqlite_insert_query_t *query = NEW(sqlite_insert_query_t);
+
+	open_sql_conn(sql_connection);
+
+	create_insert_query(query);
+
+	set_insert_query_table(query, "example");
+	set_insert_query_value(query, "value", "19");
+	// set_insert_query_value(query, "text", "chau");
+
+	run_sqlite_query(sql_connection, insert_query_to_str(query));
+
+	close_sql_conn(sql_connection);
 
 	listen_connections(config);
 
