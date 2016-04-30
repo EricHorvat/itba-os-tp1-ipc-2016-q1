@@ -128,7 +128,7 @@ int main (int argc, char **argv) {
 
 	shell_buffer = (char*)malloc(2048);
 	memset(shell_buffer, ZERO, 2048);
-/*
+/**/
 	while (1) {
 
 		printf("> ");
@@ -166,7 +166,7 @@ int main (int argc, char **argv) {
 		command_read = no;
 		shell_index = 0;
 
-	}*/
+	}//*/
 
 	// connection->connection_file = "server_incoming_connections.fifo";
 
