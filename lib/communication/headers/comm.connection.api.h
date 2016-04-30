@@ -2,7 +2,7 @@
 #define __COMMUNICATION_CONNECTION_API_H__
 
 #include <comm.errors.h>
-#include <comm.addr.h>
+#include <comm.addr.api.h>
 
 
 typedef enum {

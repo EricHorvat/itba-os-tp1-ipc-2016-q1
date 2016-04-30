@@ -110,7 +110,7 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	}  
 
 	info("SOCKET OPT",__LINE__);
-	/**/
+	*/
 
 	if ((bind(fd, (struct sockaddr *) serv_addr, sizeof(struct sockaddr_in))) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"can\'t bind socket, %d\n"ANSI_COLOR_RESET,errno);
@@ -146,7 +146,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	//info("will open connection file");
 
-	/*if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
+	if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
 		// fill error;
 		return;

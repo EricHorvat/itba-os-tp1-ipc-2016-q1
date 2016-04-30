@@ -22,11 +22,18 @@
 	   |__sqlite
 	   |__serialization
 	   |__communication
+	   |  |__fifo
+	   |  |__socket
+	   |__file_utils
 
-### Links para referencia
+### Como usar
 
-[RFC](https://tools.ietf.org/html/rfc959)
+#### Socket
+	make SOCKET=1 all
 
+#### FIFO
+	make FIFO=1 all
+    
 
 ### Resumen
 

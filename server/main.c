@@ -29,12 +29,15 @@ static void* server_responder(void* data) {
 	client_request_t *req;
 	comm_error_t *err;
 	parse_result_t *result;
-	pthread_t self;
+	pthread_t self_;
 	int pid = (int)getpid();
+	long int self;
 
 	err = NEW(comm_error_t);
-	self = pthread_self();
+	self_ = pthread_self();
 	req = (client_request_t*)data;
+
+	self = (long int)self_;
 
 	result = parse_encoded((const char*)req->input);
 

@@ -169,7 +169,7 @@ static void *data_listener(void *data) {
 	//int fd;
 	char* buffer;
 
-	pthread_t self = pthread_self();
+	long int self = (long int)pthread_self();
 
 	buffer = (char*)malloc(2048);
 	memset(buffer, '\0', 2048);
@@ -243,118 +243,33 @@ static void *data_listener(void *data) {
 
 void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
 
-	//char *request_fifo;
-	//size_t request_fifo_len = 0;
-	//int fd;
-
-	char *zero;
 
 	if (!error)
 		error = NEW(comm_error_t);
 
-	zero = (char*)malloc(1);
-	zero[0] = ZERO;
-
-	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	//request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
-	//request_fifo = (char*)malloc(request_fifo_len+2);
-
-	// request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, origin->host, endpoint->host, FIFO_EXTENSION);
-	//if (sense == COMMUNICATION_CLIENT_SERVER)
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
-	//else
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
-	//request_fifo[request_fifo_len] = '\0';
-
-	//if (!exists(request_fifo)) {
-
-	//	if (mkfifo(request_fifo, FIFO_PERMS) < 0) {
-
-	//		error->code = 4;
-	//		error->msg = "mkFIFO failed";
-	//		return;
-	//	}
-	//}
-
-	//if ( (fd = open(request_fifo, O_WRONLY)) < 0 ) {
-
-	//	error->code = 4;
-	//	error->msg = "Response FIFO could not be opened";
-	//	return;
-	//}
-
-	//printf(ANSI_COLOR_BLUE"locking %s\n"ANSI_COLOR_RESET, request_fifo);
 	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
 	write_one_by_one(conn->req_fd, data, size);
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
-	//printf(ANSI_COLOR_BLUE"unlocking %s\n"ANSI_COLOR_RESET, request_fifo);
-
-	//lose(fd);
 
 	error->code = 0;
 	error->msg = "Todo OK";
 
-	//free(request_fifo);
-
 }
 
 void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
-
-	//char *request_fifo;
-	//size_t request_fifo_len = 0;
-	int fd = 0;
 
 	int pthread_ret;
 	pthread_t listener;
 	comm_error_t *err;
 	comm_thread_info_t *thread_arg;
 
-	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(origin->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
-	// request_fifo = (char*)malloc(request_fifo_len+2);
-
-	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, origin->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-	// if (sense == COMMUNICATION_CLIENT_SERVER)
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
-	// else
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
-	// request_fifo[request_fifo_len] = '\0';
-
-	//if (!exists(request_fifo)) {
-
-	//	if (mkfifo(request_fifo, FIFO_PERMS) < 0) {
-
-	//		err = NEW(comm_error_t);
-
-	//		err->code = 4;
-	//		err->msg = "mkFIFO failed";
-	//		return cb(err, conn, NULL);
-	//	}
-	//}
-
-	//printf(ANSI_COLOR_MAGENTA"will open %s\n"ANSI_COLOR_RESET, request_fifo);
-	//if ( (fd = open(request_fifo, O_WRONLY)) < 0 ) {
-
-	//	err = NEW(comm_error_t);
-
-	//	err->code = 4;
-	//	err->msg = "Response FIFO could not be opened";
-	//	return cb(err, conn, NULL);
-	//}
-
-	//printf(ANSI_COLOR_MAGENTA"will write %s\n"ANSI_COLOR_RESET, request_fifo);
 	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
 	write_one_by_one(conn->req_fd, data, size);
-	write(conn->req_fd, ZERO, 1);
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
-	
-	//printf(ANSI_COLOR_MAGENTA"wrote %s\n"ANSI_COLOR_RESET, request_fifo);
-
-	//close(fd);
 
 	thread_arg = NEW(comm_thread_info_t);
 
@@ -379,8 +294,5 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sen
 	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
 		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);
 	}
-
-
-	//free(request_fifo);
 
 }

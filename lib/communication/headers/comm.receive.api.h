@@ -1,7 +1,7 @@
 #ifndef __COMMUNICATION_RECEIVE_API_H__
 #define __COMMUNICATION_RECEIVE_API_H__
 
-#include <comm.addr.h>
+#include <comm.addr.api.h>
 #include <stdlib.h>
 #include <comm.connection.api.h>
 

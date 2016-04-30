@@ -1,7 +1,7 @@
 #ifndef __COMMUNICATION_SEND_API_H__
 #define __COMMUNICATION_SEND_API_H__
 
-#include <comm.addr.h>
+#include <comm.addr.api.h>
 #include <comm.connection.api.h>
 #include <stdlib.h>
 
