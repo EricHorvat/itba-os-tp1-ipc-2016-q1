@@ -80,6 +80,13 @@ int main (int argc, char **argv) {
 
 	int client_url_len;
 
+	INFO("this happned");
+	WARN("ups");
+	ERROR("oh shit");
+	LOG("logging");
+	SUCCESS("ok");
+
+
 	client_args_t *client_args;
 
 	client_args = NEW(client_args_t);

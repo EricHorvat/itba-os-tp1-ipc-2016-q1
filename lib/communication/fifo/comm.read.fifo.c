@@ -34,16 +34,6 @@ typedef struct {
 
 typedef void* (*pthread_func_t)(void* data);
 
-static unsigned int TIMEOUT = 10;
-
-/**
- * [set_timeout description]
- * @param t timeout to set
- */
-/*void set_timeout(unsigned int t) {
-	TIMEOUT = t;
-}*/
-
 void comm_listen(connection_t *conn, comm_error_t *error) {
 
 	char *input_fifo;

@@ -87,8 +87,8 @@ parse_result_t *parse_encoded(const char *json) {
 	const char *kind;
 	json_object *main_object, *aux_object;
 	const char *str_value;
-	command_get_t *get_cmd;
-	command_post_t *post_cmd;
+	command_get_t *get_cmd = NULL;
+	command_post_t *post_cmd = NULL;
 
 	parse_result_t *result = NEW(parse_result_t);
 

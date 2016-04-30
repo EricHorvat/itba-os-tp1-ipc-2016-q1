@@ -61,16 +61,6 @@ typedef struct {
 
 typedef void* (*pthread_func_t)(void* data);
 
-static unsigned int TIMEOUT = 10;
-
-/**
- * [set_timeout description]
- * @param t timeout to set
- */
-void set_timeout(unsigned int t) {
-	TIMEOUT = t;
-}
-
 /**
 
 	Prototypes
@@ -78,84 +68,7 @@ void set_timeout(unsigned int t) {
 **/
 
 static void *data_listener(void *);
-// static void *pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t);
-static void *data_writer(void *data);
-// static void write_one_by_one(int fd, void *data, size_t size);
-static int create_fifo(char *fifo);
 
-/**
-
-	Typedefs
-
-**/
-
-
-
-/**
- * [create_fifo description]
- * @param  fifo the fifo path
- * @return      0 if fifo was already created or successfully created -1 otherwise
- */
-static int create_fifo(char *fifo) {
-
-	if (access(fifo, F_OK) == -1) {
-		// fifo does not exist
-		if (access(fifo, F_OK) == -1 && mkfifo(fifo, FIFO_PERMS) == -1) {
-			fprintf(stderr, "mkfifo failed with errno:%d\tmsg%s\n", errno, strerror(errno));
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-/**
- * [pthread_start_with_timeout description]
- * @param  thread the thread to start
- * @param  func   function to start a new thread with
- * @param  data   void* to pass to func
- * @param  t      timeout
- * @return        null if timeout was reached otherwise the result of func
- */
-// static void * pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t) {
-
-// 	struct timespec ts;
-// 	int thread_err;
-// 	void *ret;
-
-// 	current_utc_time(&ts);
-// 	ts.tv_sec += t;
-
-// 	#ifdef __MACH__
-// 	pthread_mutex_lock(&calculating);
-// #endif
-
-// 	pthread_create(&thread, NULL, func, data);
-
-// #ifdef __MACH__
-// 	thread_err = pthread_cond_timedwait(&done, &calculating, &ts);
-
-// 	if (thread_err == ETIMEDOUT) {
-// 		fprintf(stderr, "%s: calculation timed out\n", __func__);
-// 		return null;
-// 	}
-
-// 	if (!thread_err) {
-// 		pthread_mutex_unlock(&calculating);
-// 		pthread_join(thread, &ret);
-// 	}
-
-// #else
-// 	thread_err = pthread_timedjoin_np(thread, &ret, &ts);
-
-// 	if (thread_err != 0) {
-		
-// 		return null;
-// 	}
-// #endif
-
-// 	return ret;
-// }
 
 pthread_mutex_t lock;
 bool mutex_init = no;
@@ -177,46 +90,6 @@ static void *data_listener(void *data) {
 	comm_thread_info_t *info = (comm_thread_info_t*)data;
 
 	err = NEW(comm_error_t);
-
-	
-	// fifo = (char*)malloc(strlen(FIFO_PATH_PREFIX)+strlen(info->origin->host)+strlen(FIFO_RESPONSE_EXTENSION)+strlen(FIFO_EXTENSION));
-	//fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(info->conn->client_addr->host)+strlen(info->conn->server_addr->host)+strlen(FIFO_EXTENSION);
-	//fifo = (char*)malloc(fifo_len+2);
-
-	//if (!fifo) {
-	//	fprintf(stderr, ANSI_COLOR_RED"MemoryError: FIFO [%s] could not be allocated\n"ANSI_COLOR_RESET, fifo);
-	//	abort();
-	//}
-
-	//printf("[thread] Writing FIFO\n");
-
-	// sprintf(fifo, "%s%s%s%s", FIFO_PATH_PREFIX, info->origin->host, FIFO_RESPONSE_EXTENSION, FIFO_EXTENSION);
-	// sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->endpoint->host, info->origin->host, FIFO_EXTENSION);
-	//if (info->sense != COMMUNICATION_CLIENT_SERVER)
-	//	fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->client_addr->host, info->conn->server_addr->host, FIFO_EXTENSION);
-	//else
-	//	fifo_len = sprintf(fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, info->conn->server_addr->host, info->conn->client_addr->host, FIFO_EXTENSION);
-	//fifo[fifo_len] = '\0';
-
-	// OJOOOOOO
-	//if (!exists(fifo)) // OJOOOOOO
-	//	while (!exists(fifo)); // OJOOOOOO
-	// OJOOOOOO
-
-	//if ( (fd = open(fifo, O_RDONLY)) == -1) {
-
-	//	printf("cannot open %s with error:%d msg:%s\n", fifo, errno, strerror(errno));
-
-	//	unlink(fifo);
-	//	err->code = 2;
-	//	err->msg = "[thread] FIFO could not be opened";
-	//	info->cb(err, info->conn, NULL);
-
-	//	pthread_exit(NULL);
-
-	//	return nil;
-
-	//}
 
 	pthread_mutex_lock(&lock);
 
