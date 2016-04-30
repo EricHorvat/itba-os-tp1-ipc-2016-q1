@@ -120,31 +120,37 @@ static int cmd_sendi(connection_t *conn, char* args) {
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
-		printf(ANSI_COLOR_YELLOW"Please open connection first\n"ANSI_COLOR_RESET);
+		WARN("Please open connection first");
 
 		return 1;
 	}
 
 	err = NEW(comm_error_t);
 
+	INFO("sending %s", args);
+
 	send_int(atoi(args), conn, COMMUNICATION_CLIENT_SERVER, err);
 
+	INFO("sent %s", args);
+
 	if (err->code) {
-		printf(ANSI_COLOR_RED"send failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
+	INFO("fetching");
 	presult = receive(conn, COMMUNICATION_SERVER_CLIENT, err);
+	INFO("fetched");
 
 	if (err->code) {
-		printf(ANSI_COLOR_RED"receive failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
-	printf("result of kind %s\n", presult->kind);
+	SUCCESS("result of kind %s", presult->kind);
 
 	if (strcmp(presult->kind, "int") == 0) {
-		printf(ANSI_COLOR_GREEN"response: %d\n"ANSI_COLOR_RESET, presult->data.i);
+		SUCCESS("response: %d", presult->data.i);
 	}
 
 	return 0;
@@ -157,7 +163,7 @@ static int cmd_sendd(connection_t *conn, char* args) {
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
-		printf(ANSI_COLOR_YELLOW"Please open connection first\n"ANSI_COLOR_RESET);
+		WARN("Please open connection first");
 
 		return 1;
 	}
@@ -167,21 +173,21 @@ static int cmd_sendd(connection_t *conn, char* args) {
 	send_int(atof(args), conn, COMMUNICATION_CLIENT_SERVER, err);
 
 	if (err->code) {
-		printf(ANSI_COLOR_RED"send failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
 	presult = receive(conn, COMMUNICATION_SERVER_CLIENT, err);
 
 	if (err->code) {
-		printf(ANSI_COLOR_RED"receive failed err code: %d msg: %s\n"ANSI_COLOR_RESET, err->code, err->msg);
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
-	printf("result of kind %s\n", presult->kind);
+	SUCCESS("result of kind %s", presult->kind);
 
-	if (strcmp(presult->kind, "int") == 0) {
-		printf(ANSI_COLOR_GREEN"response: %d\n"ANSI_COLOR_RESET, presult->data.i);
+	if (strcmp(presult->kind, "double") == 0) {
+		SUCCESS("response: %f", presult->data.d);
 	}
 
 	return 0;

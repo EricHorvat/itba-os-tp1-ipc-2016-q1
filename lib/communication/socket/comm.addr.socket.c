@@ -80,6 +80,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 		++offset;
 	}
 	
+	address->extra = NEW(comm_addr_extra_t);
+
 	address->extra->port = atoi(start);
 	
 	return 0;

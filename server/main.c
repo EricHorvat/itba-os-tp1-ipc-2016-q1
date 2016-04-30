@@ -41,7 +41,7 @@ static void* server_responder(void* data) {
 
 	result = parse_encoded((const char*)req->input);
 
-	printf(ANSI_COLOR_BLUE"worker %d::thread %ld::client sent: [%s]\n"ANSI_COLOR_RESET, pid, self, result->kind);
+	INFO("worker %d::thread %ld::client sent: [%s]\n", pid, self, result->kind);
 
 	pthread_mutex_lock(&lock);
 	j++;
@@ -49,23 +49,23 @@ static void* server_responder(void* data) {
 	if (j%2==0)sleep(5);
 	pthread_mutex_lock(&lock);
 	if (strcmp(result->kind, "int") == 0) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %d\n"ANSI_COLOR_RESET, pid, self, result->data.i);
+		INFO("worker %d::thread %ld::client says: %d\n", pid, self, result->data.i);
 		send_int((result->data.i)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
-		printf(ANSI_COLOR_MAGENTA"worker %d::thread %ld::client i say: %d\n"ANSI_COLOR_RESET, pid, self, (result->data.i)*2);
+		INFO("worker %d::thread %ld::client i say: %d\n", pid, self, (result->data.i)*2);
 	} else if ( strcmp(result->kind, "double") == 0) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %f\n"ANSI_COLOR_RESET, pid, self, result->data.d);
+		INFO("worker %d::thread %ld::client says: %f\n", pid, self, result->data.d);
 		send_double((result->data.d)*2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
-		printf(ANSI_COLOR_MAGENTA"worker %d::thread %ld::client i say: %f\n"ANSI_COLOR_RESET, pid, self, (result->data.d)*2);
+		INFO("worker %d::thread %ld::client i say: %f\n", pid, self, (result->data.d)*2);
 	} else if ( strcmp(result->kind, "string") == 0 ) {
-		printf(ANSI_COLOR_CYAN"worker %d::thread %ld::client says: %s\n"ANSI_COLOR_RESET, pid, self, result->data.str);
+		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.str);
 		send_string(result->data.str+2, req->connection, COMMUNICATION_SERVER_CLIENT, err);
 	}
 	pthread_mutex_unlock(&lock);
 
 	if (err->code) {
-		fprintf(stderr, ANSI_COLOR_RED "worker %d::thread %ld::error: %d\tmsg:%s\n" ANSI_COLOR_RESET, pid, self, err->code, err->msg);
+		ERROR("worker %d::thread %ld::error: %d\tmsg:%s\n", pid, self, err->code, err->msg);
 	} else {
-		printf(ANSI_COLOR_GREEN"worker %d::thread %ld::data sent successfully: (%s)\n"ANSI_COLOR_RESET, pid, self, err->msg);
+		SUCCESS("worker %d::thread %ld::data sent successfully: (%s)\n", pid, self, err->msg);
 	}
 
 	return nil;
@@ -90,46 +90,46 @@ static void listen_connections(server_config_t *config) {
 	
 	threads = (pthread_t**)malloc(MIN_THREADS*sizeof(pthread_t*));
 
-	if (address_from_url("fd://google", connection->server_addr) != 0) {
-		fprintf(stderr, ANSI_COLOR_RED "Invalid Address\n" ANSI_COLOR_RESET);
+	if (address_from_url("socket://google:3000", connection->server_addr) != 0) {
+		ERROR("Invalid Address");
 		abort();
 	}
 
-	printf(ANSI_COLOR_GREEN"master::listening on name: %s\n"ANSI_COLOR_RESET, connection->server_addr->host);
+	SUCCESS("master::listening on name: %s", connection->server_addr->host);
 
 	comm_listen(connection, nil);
 
 	while (1) {
-		printf(ANSI_COLOR_YELLOW"master::waiting for connections\n"ANSI_COLOR_RESET);
+		WARN("master::waiting for connections");
 		comm_accept(connection, nil);
 
 		if (!connection) {
-			fprintf(stderr, ANSI_COLOR_RED"connection is null\n"ANSI_COLOR_RESET);
+			ERROR("connection is null");
 			break;
 		}
-		printf(ANSI_COLOR_GREEN"master::opened connection for %s\n"ANSI_COLOR_RESET, connection->client_addr->host);
+		SUCCESS("master::opened connection for %s", connection->client_addr->host);
 
 		childPID = fork();
 
 		if (childPID > 0) {
 			// parent
-			printf(ANSI_COLOR_GREEN"worker %d::created for %s\n"ANSI_COLOR_RESET, childPID, connection->client_addr->host);
+			SUCCESS("worker %d::created for %s", childPID, connection->client_addr->host);
 		} else {
 			if (childPID == -1) {
-				fprintf(stderr, ANSI_COLOR_RED "Could not fork\n" ANSI_COLOR_RESET);
+				ERROR("Could not fork");
 				abort();
 			}
 
 			if (pthread_mutex_init(&lock, NULL) != 0) {
-			    printf("\n mutex init failed\n");
+			    ERROR("mutex init failed");
 			    exit(3);
 			}
 
 			while (1) {
 				// si no manda nada cuelga aca
-				printf(ANSI_COLOR_YELLOW"worker %d::waiting for data from %s\n"ANSI_COLOR_RESET, getpid(), connection->client_addr->host);
+				WARN("worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
 				command = comm_receive_data(connection, COMMUNICATION_CLIENT_SERVER, nil);
-				printf(ANSI_COLOR_CYAN"worker %d::%s says %s\n"ANSI_COLOR_RESET, getpid(), connection->client_addr->host, command);
+				INFO("worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 
 				threads[current_thread] = NEW(pthread_t);
@@ -143,7 +143,7 @@ static void listen_connections(server_config_t *config) {
 				
 
 				if ( (pthread_ret = pthread_create(threads[current_thread], NULL, server_responder, request)) ) {
-					fprintf(stderr, ANSI_COLOR_RED"worker %d::pthread create returned %d\n"ANSI_COLOR_RED, getpid(), pthread_ret);
+					ERROR("worker %d::pthread create returned %d", getpid(), pthread_ret);
 				}
 
 				current_thread++;
@@ -160,7 +160,7 @@ static void listen_connections(server_config_t *config) {
 			// respond
 			// 
 			
-			printf("worker %d::ending\n", getpid());
+			INFO("worker %d::ending", getpid());
 
 			exit(0);
 		}

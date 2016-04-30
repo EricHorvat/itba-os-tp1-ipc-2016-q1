@@ -143,11 +143,11 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t se
 	zero = (char*)malloc(1);
 	zero[0] = ZERO;
 
-	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
+	INFO("locking fd(%d)", conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
 	write_one_by_one(conn->req_fd, data, size);
 	flock(conn->req_fd, LOCK_UN);
-	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
+	INFO("unlocking fd(%d)", conn->req_fd);
 
 	error->code = 0;
 	error->msg = "Todo OK";

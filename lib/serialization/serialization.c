@@ -170,11 +170,16 @@ parse_result_t *receive(connection_t *conn, comm_sense_t sense, comm_error_t *er
 
 	char *response;
 
+	INFO("will receive data");
 	response = comm_receive_data(conn, sense, error);
+	INFO("received data");
 
-	if (error->code)
+	if (error->code) {
+		ERROR("received data with code %d", error->code);
 		return null;
+	}
 
+	INFO("parsing response");
 	return parse_encoded(response);
 
 }
@@ -187,7 +192,6 @@ void send_string(char *string, connection_t *conn, comm_sense_t sense, comm_erro
 }
 
 void send_int(int number, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
-	printf("sending int %d\n", number);
 	const char* serialized = stringify_int(number);
 	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
 }

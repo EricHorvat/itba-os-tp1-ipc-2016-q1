@@ -10,7 +10,7 @@
 #include <client_config.h>
 #include <commands.h>
 
-#define DEFAULT_PROTOCOL "fd"
+#define DEFAULT_PROTOCOL "socket"
 
 static void response_handler(comm_error_t *err, connection_t *conn, char * response);
 static int getrnduser();
@@ -80,13 +80,6 @@ int main (int argc, char **argv) {
 
 	int client_url_len;
 
-	INFO("this happned");
-	WARN("ups");
-	ERROR("oh shit");
-	LOG("logging");
-	SUCCESS("ok");
-
-
 	client_args_t *client_args;
 
 	client_args = NEW(client_args_t);
@@ -106,16 +99,14 @@ int main (int argc, char **argv) {
 	}
 
 	// alocate url
-	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name)+1);
+	client_url = (char*)malloc(strlen(client_args->protocol)+3+strlen(client_args->client_name)+1+5);
 	// format url
-	client_url_len = sprintf(client_url, "%s://%s", client_args->protocol, client_args->client_name);
+	client_url_len = sprintf(client_url, "%s://%s:3000", client_args->protocol, client_args->client_name);
 	client_url[client_url_len] = ZERO;
-
-	printf("debug: {%s} {%s}\n", client_url, client_args->client_name);
 
 	// build address
 	if (address_from_url(client_url, connection->client_addr)) {
-		printf(ANSI_COLOR_RED"address failed\n"ANSI_COLOR_RESET);
+		ERROR("Address failed");
 	}
 
 	if (client_args->server) {
