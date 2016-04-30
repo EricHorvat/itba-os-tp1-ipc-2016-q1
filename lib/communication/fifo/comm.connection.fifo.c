@@ -17,9 +17,6 @@
 #define SERVER_OFFLINE 3
 #define SERVER_BUSY 4
 
-static void info(char* info) {
-	printf(ANSI_COLOR_CYAN"%s:%d %s\n"ANSI_COLOR_RESET, __FILE__, __LINE__, info);
-}
 
 comm_error_code_t connection_open(connection_t *conn) {
 
@@ -54,7 +51,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 		return 6;
 	}
 
-	info("successfully created response fifo");
+	INFO("successfully created response fifo");
 
 	// armo string $CLI.$SRV.fifo
 	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+1+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
@@ -80,7 +77,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	write_one_by_one(fd, (void*)conn->client_addr->url, url_len );
 	close(fd);
 
-	info("wrote to connetion file url");
+	INFO("wrote to connetion file url");
 
 	//busy_wait_file_exists(request_fifo);
 
@@ -91,7 +88,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 		return 7;
 	}
 
-	info("openened response fifo");
+	INFO("openened response fifo");
 
 	conn->res_fd = fd;
 
@@ -103,7 +100,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	} while ( read_bytes < url_len && *(buffer+read_bytes++) != ZERO );
 
 
-	info("read from response fifo");
+	INFO("read from response fifo");
 
 	// comparamos para evitar corrupcion de datos
 	if (strcmp(buffer, conn->client_addr->url) != 0) {
@@ -111,7 +108,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 		return 9;
 	}
 
-	info("Authentication succeeded");
+	INFO("Authentication succeeded");
 
 	// mandamos nuestro ok
 	if ( (fd = open(request_fifo, O_WRONLY)) < 0) {
@@ -119,11 +116,11 @@ comm_error_code_t connection_open(connection_t *conn) {
 		return 10;
 	}
 
-	info("opened reqeust fifo");
+	INFO("opened reqeust fifo");
 
 	write_one_by_one(fd, (void*)conn->client_addr->url, url_len+1 );
 
-	info("wrote to fifo");
+	INFO("wrote to fifo");
 	
 	// ya estoy conectado
 
