@@ -78,29 +78,19 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	conn->sense = COMMUNICATION_SERVER_CLIENT;*/
 
 
-	info("BEGIN LISTEN",__LINE__);
 	int fd;
     struct sockaddr_in * serv_addr;
 	
-	info("BEFORE 1 MEMSET",__LINE__);
 	serv_addr = malloc(sizeof(struct sockaddr_in));
-	
-	info("BEFORE 2 MEMSET",__LINE__);
 	memset(serv_addr,0,sizeof(struct sockaddr_in));
-	
-	info("AFTER MEMSET",__LINE__);
 	serv_addr->sin_family = AF_INET;
 	serv_addr->sin_addr.s_addr = INADDR_ANY;
-	serv_addr->sin_port = 3000;//conn->server_addr->port;
-
-	info("ALL CREATED",__LINE__);
+	serv_addr->sin_port = 3002;//conn->server_addr->port;
 
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	{
 			fprintf(stderr, ANSI_COLOR_RED"can\'t create socket\n"ANSI_COLOR_RESET);
 			return;
 	}
-
-	info("SOCKET CREATED",__LINE__);
 
 	/*USA EL PUERTO AL VOLVER A EJECUTAR, PREGUNTAR SI DEBERIA ESTAR/
 	int aux = 1;
@@ -110,18 +100,18 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	}  
 
 	info("SOCKET OPT",__LINE__);
-	*/
+	/**/
 
 	if ((bind(fd, (struct sockaddr *) serv_addr, sizeof(struct sockaddr_in))) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"can\'t bind socket, %d\n"ANSI_COLOR_RESET,errno);
 			return;
 	}
-	info("SOCKET BINDED",__LINE__);
 	if ((listen(fd,5/*TODO configuration in .h*/)) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"can\'t listen socket\n"ANSI_COLOR_RESET);
 			return;
 	}
-	info("SOCKET LISTENED",__LINE__);
+	
+	info(conn->server_addr->host,__LINE__);
 
 	/*HORIPILANTE**/
 	int z;
@@ -130,7 +120,6 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	sprintf(conn->connection_file, "%d", fd);
 	/**/
 
-	info("SOCKET LISTENED 2",__LINE__);
 	conn->state = CONNECTION_STATE_IDLE;
 }
 
@@ -146,7 +135,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	//info("will open connection file");
 
-	if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
+	/*if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
 		// fill error;
 		return;
@@ -257,11 +246,25 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	free(backup);
 
 	printf(ANSI_COLOR_GREEN"soy el #1\n"ANSI_COLOR_RESET);//*/
+	int fd, read_bytes = 0;
+	char * buffer = malloc( 2048 * sizeof(char));
+	memset(buffer,'\0',2048*sizeof(char));
 
-    if ((conn->res_fd = accept(atoi(conn->connection_file)/*FEO*/, NULL, NULL)) < 0) {
-    	fprintf(stderr, ANSI_COLOR_RED"can\'t listen socket\n"ANSI_COLOR_RESET);
+    if ((fd = accept(atoi(conn->connection_file)/*FEO*/, NULL, NULL)) < 0) {
+    	fprintf(stderr, ANSI_COLOR_RED"can\'t accept socket\n"ANSI_COLOR_RESET);
     }
-    conn->req_fd = conn->res_fd;
+
+	// read one by one
+	do {
+		read(fd, buffer+read_bytes, 1);
+	} while ( *(buffer+read_bytes++) != '\0');
+
+	address_from_url(buffer, conn->client_addr);
+    
+	write_one_by_one(fd,buffer,sizeof(buffer));
+
+    conn->res_fd = fd;
+    conn->req_fd = fd;
     conn->state = CONNECTION_STATE_OPEN;
 	
 }

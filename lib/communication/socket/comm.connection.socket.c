@@ -1,5 +1,5 @@
 #include <comm.connection.api.h>
-#include <comm.addr.api.h>
+#include <comm.addr.h>
 #include <comm.fifo.h>
 #include <stdlib.h>
 #include <string.h>
@@ -147,11 +147,15 @@ comm_error_code_t connection_open(connection_t *conn) {
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
-    serv_addr.sin_port = 3000/*OJOOOOOOOOOOOOOOOOOOOOOOOO*/;
+    serv_addr.sin_port = 3002/*OJOOOOOOOOOOOOOOOOOOOOOOOO*/;
     if (connect(fd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)  {
 		fprintf(stderr, ANSI_COLOR_RED"can\'t connect socket\n"ANSI_COLOR_RESET);
 	 } 
 
+	int url_len = strlen(conn->client_addr->url);
+	
+	write_one_by_one(fd,conn->client_addr->url,url_len);
+	
 	printf(ANSI_COLOR_GREEN"soy el #1\n"ANSI_COLOR_RESET);
 
 
