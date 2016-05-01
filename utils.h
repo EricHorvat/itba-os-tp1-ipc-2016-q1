@@ -49,7 +49,7 @@ typedef char* string;
 
 #ifdef __DEBUG__
 
-#define DEBUG_STR ANSI_COLOR_DARK_GRAY "%s:%d " ANSI_COLOR_RESET ANSI_COLOR_MAGENTA "function <%s>:" ANSI_COLOR_RESET  "\t"
+#define DEBUG_STR ANSI_COLOR_DARK_GRAY "%s:%d " ANSI_COLOR_RESET ANSI_COLOR_MAGENTA "<%s>:" ANSI_COLOR_RESET  "\t"
 
 // #define DEBUG(fmt, ...) printf( fmt, __FILE__, __FUNC__, __LINE__, __VA_ARGS__)
 

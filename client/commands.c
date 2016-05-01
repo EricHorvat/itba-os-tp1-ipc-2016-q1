@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <utils.h>
+#include <stdlib.h>
 
 typedef struct {
 	char *name;
@@ -16,6 +17,7 @@ static void initialize_commands();
 static int cmd_open(connection_t *, char *args);
 static int cmd_sendi(connection_t *conn, char* args);
 static int cmd_sendd(connection_t *conn, char* args);
+static int cmd_get(connection_t *conn, char* args);
 
 static client_command_t **commands;
 
@@ -54,6 +56,11 @@ static void initialize_commands() {
 	commands[i]->name = "help";
 	commands[i]->cmd = &cmd_open;
 	commands[i++]->help = "Help help";
+
+	commands[i] = NEW(client_command_t);
+	commands[i]->name = "get";
+	commands[i]->cmd = &cmd_get;
+	commands[i++]->help = "Help get";
 
 	commands[i] = NULL;
 }
@@ -129,7 +136,7 @@ static int cmd_sendi(connection_t *conn, char* args) {
 
 	INFO("sending %s", args);
 
-	send_int(atoi(args), conn, COMMUNICATION_CLIENT_SERVER, err);
+	send_int(atoi(args), conn, err);
 
 	INFO("sent %s", args);
 
@@ -139,7 +146,7 @@ static int cmd_sendi(connection_t *conn, char* args) {
 	}
 
 	INFO("fetching");
-	presult = receive(conn, COMMUNICATION_SERVER_CLIENT, err);
+	presult = receive(conn, err);
 	INFO("fetched");
 
 	if (err->code) {
@@ -170,14 +177,14 @@ static int cmd_sendd(connection_t *conn, char* args) {
 
 	err = NEW(comm_error_t);
 
-	send_int(atof(args), conn, COMMUNICATION_CLIENT_SERVER, err);
+	send_int(atof(args), conn, err);
 
 	if (err->code) {
 		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
-	presult = receive(conn, COMMUNICATION_SERVER_CLIENT, err);
+	presult = receive(conn, err);
 
 	if (err->code) {
 		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
@@ -191,4 +198,46 @@ static int cmd_sendd(connection_t *conn, char* args) {
 	}
 
 	return 0;
+}
+
+static int cmd_get(connection_t *conn, char* args) {
+
+	command_get_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+
+	if (conn->state != CONNECTION_STATE_OPEN) {
+
+		WARN("Please open connection first");
+
+		return 1;
+	}
+
+	cmd = NEW(command_get_t);
+
+	cmd->path = "/fs/mgoffan/hola";
+
+	err = NEW(comm_error_t);
+
+	send_cmd_get(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
 }

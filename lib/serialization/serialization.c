@@ -149,6 +149,8 @@ parse_result_t *parse_encoded(const char *json) {
 		
 	} else if (strcmp(kind, "command.get") == 0) {
 		
+		get_cmd = NEW(command_get_t);
+
 		json_object_object_get_ex(main_object, "path", &aux_object);
 		str_value = json_object_get_string(aux_object);
 		get_cmd->path = (char*)malloc(strlen(str_value)+1);
@@ -159,19 +161,19 @@ parse_result_t *parse_encoded(const char *json) {
 		return result;
 
 	} else {
-		fprintf(stderr, ANSI_COLOR_RED"Unknown kind\n"ANSI_COLOR_RESET);
+		ERROR("Unknown kind");
 	}
-	fprintf(stderr, ANSI_COLOR_RED"leaving null\n"ANSI_COLOR_RESET);
+	ERROR("leaving null");
 
 	return result;
 }
 
-parse_result_t *receive(connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+parse_result_t *receive(connection_t *conn, comm_error_t *error) {
 
 	char *response;
 
 	INFO("will receive data");
-	response = comm_receive_data(conn, sense, error);
+	response = comm_receive_data(conn, error);
 	INFO("received data");
 
 	if (error->code) {
@@ -186,46 +188,46 @@ parse_result_t *receive(connection_t *conn, comm_sense_t sense, comm_error_t *er
 
 // Sync
 
-void send_string(char *string, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_string(char *string, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_string(string);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
-void send_int(int number, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_int(int number, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_int(number);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
-void send_double(double number, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_double(double number, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_double(number);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
-void send_data(void *data, size_t size, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_data(void *data, size_t size, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_data(data, size);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 // Async
 
-void send_string_async(char *string, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_string_async(char *string, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_string(string);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }
 
-void send_int_async(int number, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_int_async(int number, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_int(number);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }
 
-void send_double_async(double number, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_double_async(double number, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_double(number);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }
 
-void send_data_async(void *data, size_t size, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_data_async(void *data, size_t size, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_data(data, size);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }
 
 
@@ -233,24 +235,24 @@ void send_data_async(void *data, size_t size, connection_t *conn, comm_sense_t s
 
 // Sync
 
-void send_cmd_get(command_get_t *cmd, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_cmd_get(command_get_t *cmd, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_command_get(cmd);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
-void send_cmd_post(command_post_t *cmd, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void send_cmd_post(command_post_t *cmd, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_command_post(cmd);
-	comm_send_data((void*)serialized, strlen(serialized), conn, sense, error);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 // Async
 
-void send_cmd_get_async(command_get_t *cmd, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_cmd_get_async(command_get_t *cmd, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_command_get(cmd);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }
 
-void send_cmd_post_async(command_post_t *cmd, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void send_cmd_post_async(command_post_t *cmd, connection_t *conn, comm_callback_t cb) {
 	const char* serialized = stringify_command_post(cmd);
-	comm_send_data_async((void*)serialized, strlen(serialized), conn, sense, cb);
+	comm_send_data_async((void*)serialized, strlen(serialized), conn, cb);
 }

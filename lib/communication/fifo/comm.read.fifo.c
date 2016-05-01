@@ -195,7 +195,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	
 }
 
-char* comm_receive_data(connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 
 	//char *request_fifo;
 	//size_t request_fifo_len = 0, read_bytes = 0;

@@ -50,7 +50,6 @@ void current_utc_time(struct timespec *ts) {
 typedef struct {
 	comm_callback_t cb;
 	connection_t *conn;
-	comm_sense_t sense;
 } comm_thread_info_t;
 
 typedef struct {
@@ -133,7 +132,7 @@ static void *data_listener(void *data) {
 
 }*/
 
-void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t sense, comm_error_t *error) {
+void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *error) {
 
 	char *zero;
 
@@ -154,7 +153,7 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_sense_t se
 
 }
 
-void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_sense_t sense, comm_callback_t cb) {
+void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_callback_t cb) {
 /*
 	//char *request_fifo;
 	//size_t request_fifo_len = 0;
