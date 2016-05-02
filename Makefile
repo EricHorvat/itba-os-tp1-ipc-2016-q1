@@ -1,5 +1,5 @@
 GCC=gcc
-CFLAGS=-I./ -I./server -I./client -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
+CFLAGS=-I./ -I./server -I./client -I./logging/headers -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
 CFLAGS+=-Wall
 GCCFLAGS=-pthread
 
@@ -37,6 +37,7 @@ LIBRARY_OBJECTS=$(LIBRARY_SOURCES:.c=.o)
 CLIENT_ID=client
 SERVER_ID=server
 LIB_ID=lib
+LOGGING_ID=logging
 
 LIB_OUTPUT=lib/lib.a
 
@@ -49,15 +50,22 @@ SERVER_OUTPUT=server.bin
 SERVER_SOURCES=$(wildcard server/*.c)
 SERVER_OBJECTS=$(SERVER_SOURCES:.c=.o)
 
+LOGGING_OUTPUT=logging.bin
+LOGGING_SOURCES=$(wildcard logging/*.c)
+LOGGING_OBJECTS=$(LOGGING_SOURCES:.c=.o)
 
 
-all: $(CLIENT_ID) $(LIB_ID) $(SERVER_ID) 
+
+all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID) $(LOGGGING_ID)
 
 $(CLIENT_ID): $(LIB_ID) $(CLIENT_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(CLIENT_OUTPUT) $(CLIENT_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS)
 
 $(SERVER_ID):  $(LIB_ID) $(SERVER_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(SERVER_OUTPUT) $(SERVER_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS)
+
+$(LOGGGING_ID):  $(LOGGING_OBJECTS)
+	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(LOGGING_OUTPUT) $(LOGGING_OBJECTS)
 
 $(LIB_ID): $(LIBRARY_OBJECTS)
 	ar rcs $(LIB_OUTPUT) $(LIBRARY_OBJECTS)
