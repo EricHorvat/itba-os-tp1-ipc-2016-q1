@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sqlite3.h>
+#include <sqlite.h>
 #include <errno.h>
 #include <unistd.h>
-#include <sqlite.h>
 
 static int callback(void * write_p, int argc, char **argv, char **azColName){
 	int write_pipe = *((int*)write_p);
@@ -123,13 +122,15 @@ int close_sql_conn(sql_connection_t * conn){
 	write(conn->write_pipe, SQL_CONNECTION_CLOSE_STR, strlen(SQL_CONNECTION_CLOSE_STR)+1);
 	close(conn->write_pipe);
 	close(conn->read_pipe);
+
+	return 0;
 }
 
 int init_sqlite_server(int read_pipe, int write_pipe){
 
 	sqlite3 * db;
 	int run = 1;
-	if (sqlite3_open("/Users/martin/Documents/TPSO/TP1/files.db", &db)){
+	if (sqlite3_open("./files.db", &db)){
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 		sqlite3_close(db);
 		exit(-1);
@@ -138,7 +139,7 @@ int init_sqlite_server(int read_pipe, int write_pipe){
 	while (run){
 		char * query_buffer = malloc(sizeof(char)*MAX_QUERY_LENGTH);
 
-		int q=0,readd;
+		int q=0;
 		char * aux = malloc(sizeof(char)*2);
 		strcpy(query_buffer,"");
 		aux[1]='\0';

@@ -1,4 +1,4 @@
-#include "sqlite.h"
+#include <sqlite.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -38,10 +38,10 @@ int set_select_query_atribute(sqlite_select_query_t * query, char * atribute){
 	return NO_QUERY_ERROR;
 }
 
-int set_select_query_where(sqlite_select_query_t * query, char * where){
+int set_select_query_where(sqlite_select_query_t * query, char * column, char * op, char * raw_value){
 	if(query == NULL) {errno = NULL_QUERY; return -1;}
 	
-	sprintf(query->where,"%s",where);
+	sprintf(query->where,"%s%s%s",column,op,raw_value);
 	return NO_QUERY_ERROR;
 }
 

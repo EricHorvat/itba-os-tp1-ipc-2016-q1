@@ -256,6 +256,7 @@ static int cmd_get(connection_t *conn, char* arg_str) {
 	if (strcmp(presult->kind, "data") == 0) {
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
+	return 0;
 }
 
 

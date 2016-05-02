@@ -1,11 +1,11 @@
 #ifndef __SQLITE_ABM__
 #define __SQLITE_ABM__
 
-#include "sqlite.delete.h"
-#include "sqlite.insert.h"
-#include "sqlite.select.h"
-#include "sqlite.update.h"
 #include <sqlite3.h>
+#include <sqlite.delete.h>
+#include <sqlite.insert.h>
+#include <sqlite.select.h>
+#include <sqlite.update.h>
 
 #define MAX_QUERY_LENGTH 1024
 

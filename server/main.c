@@ -288,15 +288,15 @@ static bool ask_sql(char * file_alias){
 	
 	create_select_query(query);
 	
-	set_select_query_table(query,"file");
+	set_select_query_table(query,"files");
 
 	set_select_query_atribute(query,"path");
 
-	char * where_str = malloc((8+strlen(file_alias)+1)*sizeof(char)); 
+	char * where_str = malloc((10+strlen(file_alias)+1)*sizeof(char)); 
 
-	sprintf(where_str,"alias = %s",file_alias);
+	sprintf(where_str,"\"%s\"",file_alias);
 
-	set_select_query_where(query,where_str);
+	set_select_query_where(query,"alias", "=", where_str);
 
 	ans = run_select_sqlite_query(sql_conn,query);
 
