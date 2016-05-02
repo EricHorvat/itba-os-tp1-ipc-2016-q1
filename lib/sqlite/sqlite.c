@@ -4,14 +4,26 @@
 #include <sqlite3.h>
 #include <errno.h>
 #include <unistd.h>
-#include "sqlite.h"
+#include <sqlite.h>
 
-static int callback(void * notUsed, int argc, char **argv, char **azColName){
-	int i;
+static int callback(void * write_p, int argc, char **argv, char **azColName){
+	int write_pipe = *((int*)write_p);
+	int i, written_bytes = 0;
 	for(i=0; i<argc; i++){
-		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+		char * str = malloc(/*CAMBIAR*/2048*sizeof(char));
+		int len; 
+		written_bytes = 0;
+		sprintf(str,"%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+		len = strlen(str);
+		do {
+			written_bytes += write(write_pipe, str + written_bytes,1);
+		} while (written_bytes < len);
 	}
-	printf("\n");
+	written_bytes = 0;
+	char * e = "END";/*END SELECT*/
+	do {
+		written_bytes += write(write_pipe, e + written_bytes,1);
+	} while (written_bytes < strlen(e));
 	return 0;
 }
 
@@ -20,10 +32,24 @@ int run_sqlite_query(sql_connection_t * conn, char * query_text){
 	printf ("%s\n",query_text);
 	int len = strlen(query_text);
 	int written_bytes = 0;
+	int i = 0;
+	char ** asn_vector = malloc(8/*CHANGE*/*sizeof(char*));
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes,1);
 	} while (written_bytes < len);
-	return 0;
+	char * query_response;
+	do{
+		query_response = malloc(sizeof(char)*2048/*MAX_QUERY_RESPONSE*/);
+		char * aux = malloc(sizeof(char)*2);
+		strcpy(query_response,"");	
+		do {
+			read(conn->read_pipe,aux,1);
+			strcat(query_response,aux);
+		} while (strcmp("\0",aux));
+		asn_vector[i]=query_response;
+		i++;
+	} while (strcmp(query_response, "END"));
+	return i;
 }
 
 int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * query){
@@ -129,7 +155,7 @@ int init_sqlite_server(int read_pipe, int write_pipe){
 
 			int n;
 
-			if((n = sqlite3_exec(db, query_buffer, callback, 0, &errMsg))!=SQLITE_OK ){
+			if((n = sqlite3_exec(db, query_buffer, callback, &write_pipe, &errMsg))!=SQLITE_OK ){
 				fprintf(stderr, "SQL error: %s  %d\n", errMsg,n);
 				sqlite3_free(errMsg);
 			}

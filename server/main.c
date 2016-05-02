@@ -26,6 +26,8 @@ pthread_mutex_t lock;
 
 sql_connection_t *sql_connection;
 
+static bool ask_sql(char * file_alias);
+
 static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	FILE *file;
@@ -33,6 +35,17 @@ static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 	char *contents;
 	comm_error_t *err;
 	char *p;
+
+	if(ask_sql(cmd->path)){
+		/*ERROR*/
+		ERROR("FILE IS NOT IN DB");
+
+		err = NEW(comm_error_t);
+/*
+		send_data("\0",	1, conn, err);
+		return;*/
+	}
+
 
 	size = strlen(cmd->path)+2;
 	p = (char*)malloc(size);
@@ -59,7 +72,7 @@ static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	err = NEW(comm_error_t);
 
-	send_data(strdup(contents), read_bytes, conn, err);
+	send_data(strdup(contents), size, conn, err);
 
 	free(contents);
 
@@ -263,4 +276,33 @@ int main(int argc, char **argv) {
 	// while (incoming_connections_loop() > 0);
 
 	return 0;
+}
+
+static bool ask_sql(char * file_alias){
+
+	sql_connection_t * sql_conn = malloc(sizeof(sql_conn));
+	sqlite_select_query_t * query = malloc(sizeof(sqlite_select_query_t));
+	bool ans;
+
+	open_sql_conn(sql_conn);
+	
+	create_select_query(query);
+	
+	set_select_query_table(query,"file");
+
+	set_select_query_atribute(query,"path");
+
+	char * where_str = malloc((8+strlen(file_alias)+1)*sizeof(char)); 
+
+	sprintf(where_str,"alias = %s",file_alias);
+
+	set_select_query_where(query,where_str);
+
+	ans = run_select_sqlite_query(sql_conn,query);
+
+	sleep(5);
+
+	close_sql_conn(sql_conn);
+	return ans==yes;
+
 }
