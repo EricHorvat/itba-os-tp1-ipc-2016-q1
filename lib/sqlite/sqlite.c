@@ -5,24 +5,22 @@
 #include <errno.h>
 #include <unistd.h>
 
+/*TO MARTIN, esto no lo hace write_one_by_one ?*/
+static void write_one_by_one_in_fd(char * str, int write_fd){
+	int len = strlen(str), written_bytes, i=0;
+	do {
+		written_bytes += write(write_fd, str + written_bytes,1);
+	} while (written_bytes < len);
+}
+
 static int callback(void * write_p, int argc, char **argv, char **azColName){
 	int write_pipe = *((int*)write_p);
-	int i, written_bytes = 0;
+	int i;
 	for(i=0; i<argc; i++){
 		char * str = malloc(/*CAMBIAR*/2048*sizeof(char));
-		int len; 
-		written_bytes = 0;
 		sprintf(str,"%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-		len = strlen(str);
-		do {
-			written_bytes += write(write_pipe, str + written_bytes,1);
-		} while (written_bytes < len);
+		write_one_by_one_in_fd(str,write_pipe);
 	}
-	written_bytes = 0;
-	char * e = "END";/*END SELECT*/
-	do {
-		written_bytes += write(write_pipe, e + written_bytes,1);
-	} while (written_bytes < strlen(e));
 	return 0;
 }
 
@@ -40,15 +38,22 @@ int run_sqlite_query(sql_connection_t * conn, char * query_text){
 	do{
 		query_response = malloc(sizeof(char)*2048/*MAX_QUERY_RESPONSE*/);
 		char * aux = malloc(sizeof(char)*2);
+		aux[1]='\0';
+		int readd = 0;
 		strcpy(query_response,"");	
+		printf("asdasda\n");
 		do {
-			read(conn->read_pipe,aux,1);
-			strcat(query_response,aux);
-		} while (strcmp("\0",aux));
+			readd+=read(conn->read_pipe,aux,1);
+			strcat(query_response,aux);	
+			printf("%d\n",readd);
+		} while (strcmp("\n",aux));
+		query_response[readd-1]='\0';	
+		printf("%s\n",query_response);
 		asn_vector[i]=query_response;
 		i++;
+		printf("kkkk%sPEPEasdasdasdasda\n", query_response);
 	} while (strcmp(query_response, "END"));
-	return i;
+	return --i;
 }
 
 int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * query){
@@ -160,6 +165,8 @@ int init_sqlite_server(int read_pipe, int write_pipe){
 				fprintf(stderr, "SQL error: %s  %d\n", errMsg,n);
 				sqlite3_free(errMsg);
 			}
+
+			write_one_by_one_in_fd("END\n",write_pipe);
 		} else{
 			run = 0;
 		}
