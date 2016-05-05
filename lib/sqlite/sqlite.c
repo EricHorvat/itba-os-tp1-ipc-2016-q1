@@ -5,6 +5,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <utils.h>
+
 /*TO MARTIN, esto no lo hace write_one_by_one ?*/
 static void write_one_by_one_in_fd(char * str, int write_fd, int size){
 	int written_bytes=0, i=0;
@@ -27,11 +29,19 @@ static int callback(void * write_p, int argc, char **argv, char **azColName){
 
 char * run_sqlite_query(sql_connection_t * conn, char * query_text){
 
-	printf ("%s\n",query_text);
-	int len = strlen(query_text);
+	int len;
 	int written_bytes = 0;
 	int i = 0;
-	char ** asn_vector = malloc(8/*CHANGE*/*sizeof(char*));
+	char ** asn_vector;
+
+	if (!conn) {
+		ERROR("sql_connection es null");
+		return null;
+	}
+
+	len = strlen(query_text);
+	
+	asn_vector = malloc(8/*CHANGE*/*sizeof(char*));
 	
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes,1);
@@ -55,15 +65,17 @@ char * run_sqlite_query(sql_connection_t * conn, char * query_text){
 }
 
 int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * query){
-
+ 
 	run_sqlite_query(conn, insert_query_to_str(query));
+
 	return 0;
 }
 
 char * run_select_sqlite_query(sql_connection_t * conn, sqlite_select_query_t * query){
 
-	char * a = run_sqlite_query(conn, select_query_to_str(query));
-	return a;
+	char * a;
+	a = select_query_to_str(query);
+	return run_sqlite_query(conn, a);
 }
 
 

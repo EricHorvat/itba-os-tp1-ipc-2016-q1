@@ -1,5 +1,6 @@
 #include <file_utils.h>
 #include <stdlib.h>
+#include <utils.h>
 
 /**
  * checks whether a file exists
@@ -36,4 +37,50 @@ void busy_wait_file_exists(char *path) {
 			sleep(1);
 		}
 	}
+}
+
+char * raw_data_from_file(char * path){
+
+
+	char * contents;
+	FILE *file;
+	long size;
+
+	INFO("opening %s", path);
+	if ( (file = fopen(path, "r")) == NULL) {
+		ERROR("cant open file %s", path);
+		return NULL;
+	}
+	fseek(file, 0, SEEK_END);
+	size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+
+	contents = (char*)malloc(size + 1);
+	fread(contents, size, 1, file);
+	fclose(file);
+
+	contents[size] = 0;
+
+	return contents;
+}
+
+int file_from_row_data(char * path, char * data, size_t size){
+
+	FILE *file;
+	int written_bytes;
+
+	INFO("opening %s", path);
+	if ( (file = fopen(path, "w")) == NULL) {
+		ERROR("cant open file %s", path);
+		return NULL;
+	}
+	INFO("opened, to write");
+	written_bytes = 0;
+	do{
+		written_bytes += fwrite(data+written_bytes,1,size - written_bytes,file);
+	}while(written_bytes < size);
+	INFO("ENDING");
+	fclose(file);
+
+	return 0;
 }

@@ -28,11 +28,12 @@ sql_connection_t *sql_connection;
 
 static char * ask_sql(char * file_alias);
 
+static int insert_alias_in_sql(char * file_alias);
+
 static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
-	FILE *file;
 	long size;
-	char *contents;
+	void * contents;
 	comm_error_t *err;
 	char * p;
 	char * aux;
@@ -54,20 +55,7 @@ static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	sprintf(p, ".%s", aux);
 
-	INFO("opening %s", p);
-	if ( (file = fopen(p, "r")) == NULL) {
-		ERROR("cant open file %s", p);
-		return;
-	}
-	fseek(file, 0, SEEK_END);
-	size = ftell(file);
-	fseek(file, 0, SEEK_SET);
-
-	contents = (char*)malloc(size + 1);
-	fread(contents, size, 1, file);
-	fclose(file);
-
-	contents[size] = 0;
+	contents = raw_data_from_file(p);
 
 	LOG("contents: %s", contents);
 
@@ -76,6 +64,35 @@ static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 	send_data(strdup(contents), size, conn, err);
 
 	free(contents);
+
+	if (err->code) {
+		ERROR("send failed with code %d", err->code);
+	}
+}
+
+static void process_post_cmd(connection_t *conn, command_post_t *post) {
+
+	comm_error_t *err;
+
+	char * path = malloc(14+strlen(post->dest));
+	
+	insert_alias_in_sql(post->dest);
+	
+
+	printf("TEST1\n");
+	LOG("FOUND");
+	
+	sprintf(path,"./fs/mgoffan/%s\0",post->dest);
+
+	printf("TEST\n");
+
+	/**/file_from_row_data(path,post->data,post->size);
+
+	LOG("file OK");
+
+	err = NEW(comm_error_t);
+
+	send_data(0, post->size, conn, err);
 
 	if (err->code) {
 		ERROR("send failed with code %d", err->code);
@@ -126,6 +143,13 @@ static void* server_responder(void* data) {
 		process_get_cmd(req->connection, result->data.get_cmd);
 
 		
+	}else if ( strcmp(result->kind, "command.post") == 0 ) {
+
+		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.get_cmd->path);
+
+		process_post_cmd(req->connection, result->data.post_cmd);
+
+		
 	}
 	pthread_mutex_unlock(&lock);
 
@@ -154,6 +178,9 @@ static void listen_connections(server_config_t *config) {
 	int pthread_ret;
 	client_request_t *request;
 
+	sql_connection = NEW(sql_connection_t);
+	
+	open_sql_conn(sql_connection);
 	
 	connection = NEW(connection_t);
 	connection->server_addr = NEW(comm_addr_t);
@@ -257,11 +284,6 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
-	sql_connection = NEW(sql_connection_t);
-	sqlite_insert_query_t *query = NEW(sqlite_insert_query_t);
-
-	// open_sql_conn(sql_connection);
-
 	// create_insert_query(query);
 
 	// set_insert_query_table(query, "example");
@@ -281,12 +303,10 @@ int main(int argc, char **argv) {
 
 static char * ask_sql(char * file_alias){
 
-	sql_connection_t * sql_conn = malloc(sizeof(sql_conn));
 	sqlite_select_query_t * query = malloc(sizeof(sqlite_select_query_t));
+	
 	char * ans;
 
-	open_sql_conn(sql_conn);
-	
 	create_select_query(query);
 	
 	set_select_query_table(query,"files");
@@ -299,11 +319,41 @@ static char * ask_sql(char * file_alias){
 
 	set_select_query_where(query,"alias", "=", where_str);
 
-	ans = run_select_sqlite_query(sql_conn,query);
+	printf("-----hola----\n");
 
-	sleep(5);
+	ans = run_select_sqlite_query(sql_connection,query);
 
-	close_sql_conn(sql_conn);
 	return ans;
+
+}
+
+static int insert_alias_in_sql(char * file_alias){
+
+	sqlite_insert_query_t * query = malloc(sizeof(sqlite_insert_query_t));
+	char * ans;
+	
+	create_insert_query(query);
+	
+	set_insert_query_table(query,"files");
+
+	char * path_str = malloc((13+strlen(file_alias)+1)*sizeof(char)); 
+	
+	char * alias_str = malloc((strlen(file_alias)+1)*sizeof(char)); 
+
+	sprintf(path_str,"\"/fs/mgoffan/%s\"",file_alias);
+
+	sprintf(alias_str,"\"%s\"",file_alias);
+
+	set_insert_query_value(query,"path", path_str);
+
+	set_insert_query_value(query,"owner", "2");
+
+	set_insert_query_value(query,"alias", alias_str);
+
+	ans = run_insert_sqlite_query(sql_connection,query);
+
+	/*if(!strcmp(ans, "END"))
+		return 1;*/
+	return 0;
 
 }

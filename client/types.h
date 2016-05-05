@@ -10,6 +10,7 @@ typedef struct {
 typedef struct {
 	char *data;
 	char *dest;
+	size_t size;
 } command_post_t;
 
 typedef struct {
