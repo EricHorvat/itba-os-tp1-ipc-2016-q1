@@ -6,31 +6,33 @@
 #include <unistd.h>
 
 /*TO MARTIN, esto no lo hace write_one_by_one ?*/
-static void write_one_by_one_in_fd(char * str, int write_fd){
-	int len = strlen(str), written_bytes, i=0;
+static void write_one_by_one_in_fd(char * str, int write_fd, int size){
+	int written_bytes=0, i=0;
 	do {
 		written_bytes += write(write_fd, str + written_bytes,1);
-	} while (written_bytes < len);
+	} while (written_bytes < size);
 }
 
 static int callback(void * write_p, int argc, char **argv, char **azColName){
 	int write_pipe = *((int*)write_p);
 	int i;
 	for(i=0; i<argc; i++){
+		int n;
 		char * str = malloc(/*CAMBIAR*/2048*sizeof(char));
-		sprintf(str,"%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-		write_one_by_one_in_fd(str,write_pipe);
+		n = sprintf(str,"%s\n", argv[i] ? argv[i] : "NULL");
+		write_one_by_one_in_fd(str, write_pipe, n);
 	}
 	return 0;
 }
 
-int run_sqlite_query(sql_connection_t * conn, char * query_text){
+char * run_sqlite_query(sql_connection_t * conn, char * query_text){
 
 	printf ("%s\n",query_text);
 	int len = strlen(query_text);
 	int written_bytes = 0;
 	int i = 0;
 	char ** asn_vector = malloc(8/*CHANGE*/*sizeof(char*));
+	
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes,1);
 	} while (written_bytes < len);
@@ -41,19 +43,15 @@ int run_sqlite_query(sql_connection_t * conn, char * query_text){
 		aux[1]='\0';
 		int readd = 0;
 		strcpy(query_response,"");	
-		printf("asdasda\n");
 		do {
 			readd+=read(conn->read_pipe,aux,1);
 			strcat(query_response,aux);	
-			printf("%d\n",readd);
 		} while (strcmp("\n",aux));
 		query_response[readd-1]='\0';	
-		printf("%s\n",query_response);
 		asn_vector[i]=query_response;
 		i++;
-		printf("kkkk%sPEPEasdasdasdasda\n", query_response);
 	} while (strcmp(query_response, "END"));
-	return --i;
+	return asn_vector[0];
 }
 
 int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * query){
@@ -62,10 +60,10 @@ int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * que
 	return 0;
 }
 
-int run_select_sqlite_query(sql_connection_t * conn, sqlite_select_query_t * query){
+char * run_select_sqlite_query(sql_connection_t * conn, sqlite_select_query_t * query){
 
-	run_sqlite_query(conn, select_query_to_str(query));
-	return 0;
+	char * a = run_sqlite_query(conn, select_query_to_str(query));
+	return a;
 }
 
 
@@ -166,7 +164,7 @@ int init_sqlite_server(int read_pipe, int write_pipe){
 				sqlite3_free(errMsg);
 			}
 
-			write_one_by_one_in_fd("END\n",write_pipe);
+			write_one_by_one_in_fd("END\n",write_pipe, 4);
 		} else{
 			run = 0;
 		}
