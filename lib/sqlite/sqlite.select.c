@@ -46,12 +46,15 @@ int set_select_query_where(sqlite_select_query_t * query, char * column, char * 
 }
 
 char * select_query_to_str(sqlite_select_query_t * query){
+	int size;
 	if(query == NULL) {errno = NULL_QUERY; return NULL;}
 	if(query->table == NULL) {errno = NO_TABLE; return NULL;}
 	if(query->atributes[0] == NULL) query->atributes[0] = "*";
 
 	char * query_str = malloc(sizeof(char)*MAX_QUERY_LENGTH);
-	sprintf(query_str,"SELECT %s FROM %s WHERE %s;",to_fields_string(query->atributes), query->table, query->where);
-	
+
+	size = sprintf(query_str,"SELECT %s FROM %s WHERE %s;",to_fields_string(query->atributes), query->table, query->where);
+	query_str[size]='\0';
+	printf("%d\n", strlen(query_str));
 	return query_str;
 }

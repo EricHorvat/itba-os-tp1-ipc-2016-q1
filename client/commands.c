@@ -18,6 +18,7 @@ static int cmd_open(connection_t *, char *args);
 static int cmd_sendi(connection_t *conn, char* args);
 static int cmd_sendd(connection_t *conn, char* args);
 static int cmd_get(connection_t *conn, char* args);
+static int cmd_post(connection_t *conn, char* args);
 
 static client_command_t **commands;
 
@@ -60,7 +61,12 @@ static void initialize_commands() {
 	commands[i] = NEW(client_command_t);
 	commands[i]->name = "get";
 	commands[i]->cmd = &cmd_get;
-	commands[i++]->help = "Help get";
+	commands[i++]->help = "Get help";
+
+	commands[i] = NEW(client_command_t);
+	commands[i]->name = "post";
+	commands[i]->cmd = &cmd_post;
+	commands[i++]->help = "Post help";
 
 	commands[i] = NULL;
 }
@@ -259,6 +265,59 @@ static int cmd_get(connection_t *conn, char* arg_str) {
 	return 0;
 }
 
+static int cmd_post(connection_t *conn, char * args){
+	
+	command_post_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+	int argc = 0;
+	char ** argv;
+
+	if (conn->state != CONNECTION_STATE_OPEN) {
+
+		WARN("Please open connection first");
+
+		return 1;
+	}
+
+	cmd = NEW(command_get_t);
+
+	err = NEW(comm_error_t);
+
+	argv = split_arguments(args);
+	argc = count_elements(argv);
+
+	if(argc != 2){
+		ERROR("Correct use: post alias file");
+		return err->code = 10001;
+	}
+
+	cmd->dest = argv[0];
+	cmd->data = raw_data_from_file(argv[1]);
+	
+	send_cmd_post(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
+	return 0;
+}
 
 /*FIJARSE DONDE PONERLO*/
 char** split_arguments(char * sentence){
