@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <server.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -15,6 +15,9 @@
 #include <sqlite.h>
 #include <file_utils.h>
 
+#include <helpers/responder.h>
+#include <helpers/sql_helpers.h>
+
 #define MIN_THREADS 10
 
 typedef struct {
@@ -26,78 +29,9 @@ pthread_mutex_t lock;
 
 sql_connection_t *sql_connection;
 
-static char * ask_sql(char * file_alias);
+static void listen_connections(server_config_t *config);
+static void* server_responder(void* data);
 
-static int insert_alias_in_sql(char * file_alias);
-
-static void process_get_cmd(connection_t *conn, command_get_t *cmd) {
-
-	long size;
-	void * contents;
-	comm_error_t *err;
-	char * p;
-	char * aux;
-
-	if(!strcmp( ( aux = ask_sql(cmd->path) ), "END" ) ){
-		/*ERROR*/
-		ERROR("FILE IS NOT IN DB");
-
-		err = NEW(comm_error_t);
-
-		send_data("\0",	1, conn, err);
-		return;
-	}
-
-
-	size = strlen(aux)+2;
-	p = (char*)malloc(size);
-	memset(p, ZERO, size);
-
-	sprintf(p, ".%s", aux);
-
-	contents = raw_data_from_file(p);
-
-	LOG("contents: %s", contents);
-
-	err = NEW(comm_error_t);
-
-	send_data(strdup(contents), size, conn, err);
-
-	free(contents);
-
-	if (err->code) {
-		ERROR("send failed with code %d", err->code);
-	}
-}
-
-static void process_post_cmd(connection_t *conn, command_post_t *post) {
-
-	comm_error_t *err;
-
-	char * path = malloc(14+strlen(post->dest));
-	
-	insert_alias_in_sql(post->dest);
-	
-
-	printf("TEST1\n");
-	LOG("FOUND");
-	
-	sprintf(path,"./fs/mgoffan/%s\0",post->dest);
-
-	printf("TEST\n");
-
-	/**/file_from_row_data(path,post->data,post->size);
-
-	LOG("file OK");
-
-	err = NEW(comm_error_t);
-
-	send_data(0, post->size, conn, err);
-
-	if (err->code) {
-		ERROR("send failed with code %d", err->code);
-	}
-}
 
 static void* server_responder(void* data) {
 
@@ -152,8 +86,6 @@ static void* server_responder(void* data) {
 		
 	}
 	pthread_mutex_unlock(&lock);
-
-
 
 
 	if (err->code) {
@@ -265,13 +197,11 @@ static void listen_connections(server_config_t *config) {
 
 }
 
-
 int main(int argc, char **argv) {
 	
 	
 	server_config_t *config;
 	char *config_file_opt;
-	
 
 	config = NEW(server_config_t);
 	
@@ -284,76 +214,7 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
-	// create_insert_query(query);
-
-	// set_insert_query_table(query, "example");
-	// set_insert_query_value(query, "value", "19");
-	// // set_insert_query_value(query, "text", "chau");
-
-	// run_sqlite_query(sql_connection, insert_query_to_str(query));
-
-	// close_sql_conn(sql_connection);
-
 	listen_connections(config);
 
-	// while (incoming_connections_loop() > 0);
-
 	return 0;
-}
-
-static char * ask_sql(char * file_alias){
-
-	sqlite_select_query_t * query = malloc(sizeof(sqlite_select_query_t));
-	
-	char * ans;
-
-	create_select_query(query);
-	
-	set_select_query_table(query,"files");
-
-	set_select_query_atribute(query,"path");
-
-	char * where_str = malloc((10+strlen(file_alias)+1)*sizeof(char)); 
-
-	sprintf(where_str,"\"%s\"",file_alias);
-
-	set_select_query_where(query,"alias", "=", where_str);
-
-	printf("-----hola----\n");
-
-	ans = run_select_sqlite_query(sql_connection,query);
-
-	return ans;
-
-}
-
-static int insert_alias_in_sql(char * file_alias){
-
-	sqlite_insert_query_t * query = malloc(sizeof(sqlite_insert_query_t));
-	char * ans;
-	
-	create_insert_query(query);
-	
-	set_insert_query_table(query,"files");
-
-	char * path_str = malloc((13+strlen(file_alias)+1)*sizeof(char)); 
-	
-	char * alias_str = malloc((strlen(file_alias)+1)*sizeof(char)); 
-
-	sprintf(path_str,"\"/fs/mgoffan/%s\"",file_alias);
-
-	sprintf(alias_str,"\"%s\"",file_alias);
-
-	set_insert_query_value(query,"path", path_str);
-
-	set_insert_query_value(query,"owner", "2");
-
-	set_insert_query_value(query,"alias", alias_str);
-
-	ans = run_insert_sqlite_query(sql_connection,query);
-
-	/*if(!strcmp(ans, "END"))
-		return 1;*/
-	return 0;
-
 }

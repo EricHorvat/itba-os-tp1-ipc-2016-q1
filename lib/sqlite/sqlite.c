@@ -9,7 +9,7 @@
 
 /*TO MARTIN, esto no lo hace write_one_by_one ?*/
 static void write_one_by_one_in_fd(char * str, int write_fd, int size){
-	int written_bytes=0, i=0;
+	int written_bytes=0;
 	do {
 		written_bytes += write(write_fd, str + written_bytes,1);
 	} while (written_bytes < size);

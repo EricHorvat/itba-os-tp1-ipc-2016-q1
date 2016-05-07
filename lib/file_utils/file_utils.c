@@ -72,7 +72,7 @@ int file_from_row_data(char * path, char * data, size_t size){
 	INFO("opening %s", path);
 	if ( (file = fopen(path, "w")) == NULL) {
 		ERROR("cant open file %s", path);
-		return NULL;
+		return -1;
 	}
 	INFO("opened, to write");
 	written_bytes = 0;

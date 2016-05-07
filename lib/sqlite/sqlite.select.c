@@ -55,6 +55,5 @@ char * select_query_to_str(sqlite_select_query_t * query){
 
 	size = sprintf(query_str,"SELECT %s FROM %s WHERE %s;",to_fields_string(query->atributes), query->table, query->where);
 	query_str[size]='\0';
-	printf("%d\n", strlen(query_str));
 	return query_str;
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <utils.h>
 #include <stdlib.h>
+#include <file_utils.h>
 
 typedef struct {
 	char *name;
@@ -280,7 +281,7 @@ static int cmd_post(connection_t *conn, char * args){
 		return 1;
 	}
 
-	cmd = NEW(command_get_t);
+	cmd = NEW(command_post_t);
 
 	err = NEW(comm_error_t);
 
