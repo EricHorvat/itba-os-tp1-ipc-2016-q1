@@ -53,9 +53,14 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 
 	comm_error_t *err;
 	size_t path_length;
+	int g=0;
+
+	printf("%d\n", g++);
 
 	char * path = malloc(14+strlen(post->dest)); // 14??
 	
+	printf("%d\n", g++);
+
 	insert_alias_in_sql(post->dest);
 	
 

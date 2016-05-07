@@ -47,7 +47,7 @@ static void* server_responder(void* data) {
 	req = (client_request_t*)data;
 
 	self = (long int)self_;
-
+	
 	result = parse_encoded((const char*)req->input);
 
 	INFO("worker %d::thread %ld::client sent: [%s]\n", pid, self, result->kind);

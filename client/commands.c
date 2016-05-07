@@ -72,7 +72,7 @@ static void initialize_commands() {
 	commands[i] = NULL;
 }
 
-int cmd_parse(connection_t *conn, char *cmd) {
+int cmd_parse(connection_t *conn, char * cmd) {
 
 	char *start = cmd;
 	// char **cmds = commands;
@@ -271,8 +271,10 @@ static int cmd_post(connection_t *conn, char * args){
 	command_post_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0;
+	int argc = 0, g=0;
 	char ** argv;
+
+	printf("%d\n", g++);
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
@@ -281,31 +283,48 @@ static int cmd_post(connection_t *conn, char * args){
 		return 1;
 	}
 
+	printf("%d\n", g++);
+
 	cmd = NEW(command_post_t);
 
 	err = NEW(comm_error_t);
 
+	printf("%d\n", g++);
+
 	argv = split_arguments(args);
 	argc = count_elements(argv);
+
+	printf("%d\n", g++);
 
 	if(argc != 2){
 		ERROR("Correct use: post alias file");
 		return err->code = 10001;
 	}
 
+	printf("%d\n", g++);
+
 	cmd->dest = argv[0];
 	cmd->data = raw_data_from_file(argv[1]);
-	
+	cmd->size = strlen(cmd->data);//TODO CHANGE
+
+	printf("%d\n", g++);
+
 	send_cmd_post(cmd, conn, err);
+
+	printf("%d\n", g++);
 
 	if (err->code) {
 		ERROR("send failed code %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
+	printf("%d\n", g++);
+
 	INFO("fetching");
 	presult = receive(conn, err);
 	INFO("fetched");
+
+	printf("%d\n", g++);
 
 	if (err->code) {
 		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
@@ -314,9 +333,13 @@ static int cmd_post(connection_t *conn, char * args){
 
 	SUCCESS("result of kind %s", presult->kind);
 
+	printf("%d\n", g++);
+
 	if (strcmp(presult->kind, "data") == 0) {
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
+	printf("%d\n", g++);
+
 	return 0;
 }
 

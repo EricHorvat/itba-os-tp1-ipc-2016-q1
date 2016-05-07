@@ -1,8 +1,15 @@
 #include <utils.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define BOUNDARY_PREFIX "--boundaryTPSO1IPC"
+
+#ifndef RAND_MAX
+#define RAND_MAX 32767
+#endif
 
 static bool seeded = false;
 
@@ -16,7 +23,7 @@ int getrnd(int min, int max) {
 	return rand() % (max-min) + min;
 }
 
-char *gen_boundary() {
+char * gen_boundary() {
 
 	char *boundary;
 	size_t length;
