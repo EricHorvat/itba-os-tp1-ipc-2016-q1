@@ -69,4 +69,7 @@ typedef char* string;
 
 #endif
 
+int getrnd(int, int);
+char *gen_boundary();
+
 #endif

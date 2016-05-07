@@ -13,30 +13,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-// http://cursuri.cs.pub.ro/~apc/2003/resources/pthreads/uguide/users-77.htm
-pthread_cond_t done  = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t calculating = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-void current_utc_time(struct timespec *ts) {
-
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	ts->tv_sec = mts.tv_sec;
-	ts->tv_nsec = mts.tv_nsec;
-#else
-	clock_gettime(CLOCK_REALTIME, ts);
-#endif
-
-}
-
 #include <file_utils.h>
 #include <utils.h>
 #include <comm.fifo.h>
@@ -136,10 +112,14 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
 	pthread_t listener;
 	comm_error_t *err;
 	comm_thread_info_t *thread_arg;
+	char *boundary;
 
+	boundary = gen_boundary();
 	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	write_one_by_one(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 

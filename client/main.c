@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 #include <types.h>
-
 #include <serialization.h>
 #include <utils.h>
 #include <client_config.h>
@@ -13,7 +11,6 @@
 #define DEFAULT_PROTOCOL "socket"
 
 static void response_handler(comm_error_t *err, connection_t *conn, char * response);
-static int getrnduser();
 
 static void response_handler(comm_error_t *err, connection_t *conn, char * response) {
 
@@ -42,15 +39,6 @@ static void response_handler(comm_error_t *err, connection_t *conn, char * respo
 
 }
 
-static bool seeded = false;
-
-static int getrnduser() {
-	if (!seeded) {
-		srand(time(NULL));
-		seeded = true;
-	}
-	return rand() % 9000 + 1000;
-}
 
 int main (int argc, char **argv) {
 
@@ -91,7 +79,7 @@ int main (int argc, char **argv) {
 
 	if (!client_args->client_name) {
 		client_args->client_name = (char*)malloc(9);
-		client_url_len = sprintf(client_args->client_name, "anon%d", ( a = getrnduser()));
+		client_url_len = sprintf(client_args->client_name, "anon%d", ( a = getrnd(1000,10000)));
 		client_args->client_name[client_url_len] = 0;
 	}
 	if (!client_args->protocol) {

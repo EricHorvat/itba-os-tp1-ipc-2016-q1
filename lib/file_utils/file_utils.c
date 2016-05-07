@@ -16,6 +16,14 @@ bool exists(char* path) {
 
 }
 
+void write_one_by_one_without_zero(int fd, void *data, size_t size) {
+	size_t written = 0;
+	while (written < size && *(char*)(data+written) != '\0') {
+		write(fd, data+written, 1);
+		written++;
+	}
+}
+
 /**
  * writes data one byte at a time
  * @param fd   fd to write to
