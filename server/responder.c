@@ -34,7 +34,7 @@ void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	sprintf(p, ".%s", aux);
 
-	contents = raw_data_from_file(p);
+	contents = raw_data_from_file(p, &size);
 
 	LOG("contents: %s", contents);
 
@@ -72,7 +72,7 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 
 	printf("TEST\n");
 
-	/**/file_from_row_data(path,post->data,post->size);
+	/**/file_from_row_data(path,decode_to_raw_data(post->data),post->size);
 
 	LOG("file OK");
 

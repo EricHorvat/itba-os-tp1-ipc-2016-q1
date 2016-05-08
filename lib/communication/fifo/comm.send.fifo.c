@@ -91,13 +91,17 @@ static void *data_listener(void *data) {
 
 void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *error) {
 
+	char *boundary;
 
 	if (!error)
 		error = NEW(comm_error_t);
 
+	boundary = gen_boundary();
 	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
-	write_one_by_one(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
+	write_one_by_one_without_zero(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 
@@ -118,7 +122,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
 	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
-	write_one_by_one(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, data, size);
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);

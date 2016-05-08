@@ -197,55 +197,42 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 
-	//char *request_fifo;
-	//size_t request_fifo_len = 0, read_bytes = 0;
-	//int fd;
-	char *buffer;
+	char *buffer, *boundary, *accum;
 	size_t read_bytes = 0;
+	size_t boundary_len = 0;
 
-	// request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client->host)+strlen(FIFO_REQUEST_EXTENSION)+strlen(FIFO_EXTENSION);
-	//request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
-	//request_fifo = (char*)malloc(request_fifo_len+2);
-
-	// request_fifo_len = sprintf(request_fifo, "%s%s%s%s", FIFO_PATH_PREFIX, client->host, FIFO_REQUEST_EXTENSION, FIFO_EXTENSION);
-	//if (sense == COMMUNICATION_CLIENT_SERVER)
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
-	//else
-	//	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
-	//request_fifo[request_fifo_len] = '\0';
-
-	//if (!exists(request_fifo)) {
-	//	fprintf(stderr, ANSI_COLOR_RED"file [%s] does not exist\n"ANSI_COLOR_RESET, request_fifo);
-		
-
-
-		// OJO esta linea
-	//	while (!exists(request_fifo)) { // OJO esta linea
-	//		sleep(1); // OJO esta linea
-	//	} // OJO esta linea
-		// OJO esta linea
-	//	printf(ANSI_COLOR_GREEN"file [%s] now exists\n"ANSI_COLOR_RESET, request_fifo);
-	//}
-
-	//printf(ANSI_COLOR_CYAN"%d will open %s\n"ANSI_COLOR_RESET, getpid(), request_fifo);
-	
-	//if ( (fd = open(request_fifo, O_RDONLY)) < 0 ) {
-	//	printf(ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
-	//	fprintf(stderr, ANSI_COLOR_RED"open failed\n"ANSI_COLOR_RESET);
-	//	abort();
-		// rellenar el error
-
-	//	return nil; 
-	//}
-	//printf(ANSI_COLOR_CYAN"opened %s\n"ANSI_COLOR_RESET, request_fifo);
+	bool c = no;
 
 	buffer = (char*)malloc(2048);
 	memset(buffer, '\0', 2048);
 
+	boundary = (char*)malloc(128);
+	memset(boundary, '\0', 128);
+
+	// get boundary
+	do {
+		read(conn->res_fd, boundary+read_bytes, 1);
+	} while (*(boundary+read_bytes++) != '_');
+
+	read(conn->res_fd, boundary+read_bytes, 1);
+
+	boundary_len = read_bytes+1;
+
+	read_bytes = 0;
+
 	do {
 		read(conn->res_fd, buffer+read_bytes, 1);
-	} while (*(buffer+read_bytes++) != '\0');
-	//close(fd);
+		if (*(buffer+read_bytes) == ZERO) {
+			ERROR("found zero");	
+			read_bytes++;
+			read(conn->res_fd, buffer+read_bytes, 1);
+		}
+		read_bytes++;
+	} while (read_bytes <= boundary_len || strcmp(buffer+(read_bytes-boundary_len), boundary) != 0);
+
+	buffer[read_bytes-boundary_len] = '\0';
+
+	free(boundary);
 
 	return buffer;
 

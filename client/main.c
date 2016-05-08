@@ -7,6 +7,7 @@
 #include <utils.h>
 #include <client_config.h>
 #include <commands.h>
+#include <file_utils.h>
 
 #define DEFAULT_PROTOCOL "socket"
 
@@ -152,33 +153,6 @@ int main (int argc, char **argv) {
 		command_read = no;
 		shell_index = 0;
 
-	}//*/
-
-	// connection->connection_file = "server_incoming_connections.fifo";
-
-	
-	server_url = "fd://google";
-	connection->server_addr = NEW(comm_addr_t);
-	address_from_url(server_url, connection->server_addr);
-
-	// if ( (addr_error = address_from_url(, client_addr)) > 0) {
-
-	// 	printf("Error %d\n", addr_error);
-	// 	return addr_error;
-	// }
-
-	if ( (conn_error = connection_open(connection) != 0) ) {
-		fprintf(stderr, ANSI_COLOR_RED"error %d creating connection\n"ANSI_COLOR_RESET, conn_error);
 	}
-
-	get_cmd = NEW(command_get_t);
-
-	get_cmd->path = "/martin/home/etc";
-
-	// send_cmd_get(get_cmd, connection, COMMUNICATION_CLIENT_SERVER, nil);
-
-
-
-	sleep(100);
 
 }

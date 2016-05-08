@@ -1,6 +1,7 @@
 #include <file_utils.h>
 #include <stdlib.h>
 #include <utils.h>
+#include <string.h>
 
 /**
  * checks whether a file exists
@@ -47,7 +48,7 @@ void busy_wait_file_exists(char *path) {
 	}
 }
 
-char * raw_data_from_file(char * path){
+char * raw_data_from_file(char * path, int *length){
 
 
 	char * contents;
@@ -69,7 +70,60 @@ char * raw_data_from_file(char * path){
 
 	contents[size] = 0;
 
+	*length = size; 
+
 	return contents;
+}
+
+char* encode_raw_data(char* data, int size) {
+
+	unsigned char *output, *tmp;
+	size_t wrote = 0;
+
+	output = (char*)malloc(size*3+2);
+	tmp = (char*)malloc(3);
+
+	memset(output, ZERO, size*3+2);
+	memset(tmp, ZERO, 3);
+
+	while (wrote < size) {
+
+		sprintf(tmp, "%03d", (unsigned int)*(unsigned char*)(data+wrote));
+		strncat(output, tmp, 3);
+
+		wrote++;
+	}
+
+	free(tmp);
+
+	return output;
+
+}
+
+char* decode_to_raw_data(char* data) {
+
+	char *result;
+	size_t len;
+	int i = 0;
+	int ascii;
+
+	INFO("decode %s", data);
+
+	len = strlen(data);
+
+	result = (char*)malloc(len/3+1);
+
+	INFO("decode %s", data);
+
+	for (; i < len; i+=3) {
+		ascii = (data[i] - '0')*100 + (data[i+1] - '0')*10 + (data[i+2] - '0');
+		result[i/3] = ascii;
+	}
+
+	result[i] = '\0';
+
+	return result;
+
 }
 
 int file_from_row_data(char * path, char * data, size_t size){

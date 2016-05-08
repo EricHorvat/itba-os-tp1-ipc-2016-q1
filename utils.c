@@ -32,10 +32,10 @@ char * gen_boundary() {
 		rand_max_digits = ceilf(log10(RAND_MAX));
 	}
 
-	length = strlen(BOUNDARY_PREFIX)+rand_max_digits;
+	length = strlen(BOUNDARY_PREFIX)+rand_max_digits+2;
 	boundary = malloc(length+1);
 
-	length = sprintf(boundary, "%s%d", BOUNDARY_PREFIX, getrnd((int)pow(10,rand_max_digits-1), RAND_MAX ) );
+	length = sprintf(boundary, "%s%d__", BOUNDARY_PREFIX, getrnd((int)pow(10,rand_max_digits-1), RAND_MAX ) );
 	boundary[length] = ZERO;
 
 	return boundary;
