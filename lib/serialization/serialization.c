@@ -97,7 +97,7 @@ const char* stringify_command_login(command_login_t *cmd) {
 
 const char* stringify_command_logout(command_logout_t *cmd) {
 	json_object *json_object_object = json_object_new_object();
-	json_object *json_object_string_kind = json_object_new_string("command.login");
+	json_object *json_object_string_kind = json_object_new_string("command.logout");
 	
 	json_object_object_add(json_object_object, "kind", json_object_string_kind);
 

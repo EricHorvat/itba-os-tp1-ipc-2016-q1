@@ -7,7 +7,7 @@
 
 typedef struct {
 	char *name;
-	int (*cmd)(connection_t *, char *args);
+	int (*cmd)(connection_t *, char ** argv, int argc);
 	char *help;
 } client_command_t;
 
@@ -16,13 +16,13 @@ static bool logged = no;
 
 static void initialize_commands();
 
-static int cmd_open(connection_t *, char *args);
-static int cmd_sendi(connection_t *conn, char* args);
-static int cmd_sendd(connection_t *conn, char* args);
-static int cmd_get(connection_t *conn, char* args);
-static int cmd_post(connection_t *conn, char* args);
-static int cmd_login(connection_t *conn, char* args);
-static int cmd_logout(connection_t *conn, char* args);
+static int cmd_open(connection_t *,  char ** argv, int argc);
+static int cmd_sendi(connection_t *conn,  char ** argv, int argc);
+static int cmd_sendd(connection_t *conn,  char ** argv, int argc);
+static int cmd_get(connection_t *conn,  char ** argv, int argc);
+static int cmd_post(connection_t *conn,  char ** argv, int argc);
+static int cmd_login(connection_t *conn,  char ** argv, int argc);
+static int cmd_logout(connection_t *conn,  char ** argv, int argc);
 
 static client_command_t **commands;
 
@@ -87,7 +87,8 @@ static void initialize_commands() {
 
 int cmd_parse(connection_t *conn, char * cmd) {
 
-	char *start = cmd;
+	char ** comms;
+	int argc;
 	// char **cmds = commands;
 	int i = 0, j = 0;
 
@@ -96,39 +97,38 @@ int cmd_parse(connection_t *conn, char * cmd) {
 		initialized_commands = yes;
 	}
 
-	while (*cmd != '\n' && *cmd != '\0') {
+	comms = split_arguments(cmd);
+	argc = count_elements(comms);
 
-		if (*cmd == ' ') {
 
-			while (commands[j] != NULL) {
+	while (commands[j] != NULL) {
 
-				if (strncmp(start, commands[j]->name, i) == 0) {
-					int error_code;
-					error_code = commands[j]->cmd(conn, cmd+1);
-					return error_code;
-				}
-
-				j++;
-			}
-			printf(ANSI_COLOR_YELLOW"[%s] Command not found\n"ANSI_COLOR_RESET, start);
-			return 1;
+		if (strcmp(comms[0], commands[j]->name) == 0) {
+			int error_code;
+			error_code = commands[j]->cmd(conn, comms+1,argc-1);
+			return error_code;
 		}
-		i++;
-		cmd++;
+		j++;
 	}
-
+	printf(ANSI_COLOR_YELLOW"[%s] Command not found\n"ANSI_COLOR_RESET, comms[0]);
 	return 1;
 
 
 }
 
-static int cmd_open(connection_t *conn, char *args) {
+static int cmd_open(connection_t *conn, char ** argv, int argc) {
 
 	int conn_error = -4;
 
 	conn->server_addr = NEW(comm_addr_t);
+	
+	if(argc != 1){
+		ERROR("Correct use: open url");
+		return 1;
 
-	if (address_from_url(args, conn->server_addr)) {
+	}
+
+	if (address_from_url(argv[0], conn->server_addr)) {
 		return 5;
 	}
 
@@ -141,7 +141,7 @@ static int cmd_open(connection_t *conn, char *args) {
 
 }
 
-static int cmd_sendi(connection_t *conn, char* args) {
+static int cmd_sendi(connection_t *conn, char ** argv, int argc) {
 
 	comm_error_t *err;
 	parse_result_t *presult;
@@ -153,13 +153,19 @@ static int cmd_sendi(connection_t *conn, char* args) {
 		return 1;
 	}
 
+	if(argc != 1){
+		ERROR("Correct use: sendi int");
+		return 1;
+
+	}
+
 	err = NEW(comm_error_t);
 
-	INFO("sending %s", args);
+	INFO("sending %s", argv[0]);
 
-	send_int(atoi(args), conn, err);
+	send_int(atoi(argv[0]), conn, err);
 
-	INFO("sent %s", args);
+	INFO("sent %s", argv[0]);
 
 	if (err->code) {
 		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
@@ -184,7 +190,7 @@ static int cmd_sendi(connection_t *conn, char* args) {
 	return 0;
 }
 
-static int cmd_sendd(connection_t *conn, char* args) {
+static int cmd_sendd(connection_t *conn, char ** argv, int argc) {
 
 	comm_error_t *err;
 	parse_result_t *presult;
@@ -198,7 +204,7 @@ static int cmd_sendd(connection_t *conn, char* args) {
 
 	err = NEW(comm_error_t);
 
-	send_int(atof(args), conn, err);
+	send_int(atof(argv[0]), conn, err);
 
 	if (err->code) {
 		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
@@ -221,14 +227,12 @@ static int cmd_sendd(connection_t *conn, char* args) {
 	return 0;
 }
 
-static int cmd_get(connection_t *conn, char* arg_str) {
+static int cmd_get(connection_t *conn, char ** argv, int argc) {
 
 	command_get_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0;
-	char ** argv;
-
+	
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
 		WARN("Please open connection first");
@@ -245,9 +249,6 @@ static int cmd_get(connection_t *conn, char* arg_str) {
 	cmd = NEW(command_get_t);
 
 	err = NEW(comm_error_t);
-
-	argv = split_arguments(arg_str);
-	argc = count_elements(argv);
 
 	if(argc != 1){
 		ERROR("TOO MUCH ARGUMENTS");
@@ -280,14 +281,11 @@ static int cmd_get(connection_t *conn, char* arg_str) {
 	return 0;
 }
 
-static int cmd_post(connection_t *conn, char * args){
+static int cmd_post(connection_t *conn, char ** argv, int argc){
 	
 	command_post_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0;
-	char ** argv;
-
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
 		WARN("Please open connection first");
@@ -304,9 +302,6 @@ static int cmd_post(connection_t *conn, char * args){
 	cmd = NEW(command_post_t);
 
 	err = NEW(comm_error_t);
-
-	argv = split_arguments(args);
-	argc = count_elements(argv);
 
 	if(argc != 2){
 		ERROR("Correct use: post alias file");
@@ -342,13 +337,11 @@ static int cmd_post(connection_t *conn, char * args){
 	return 0;
 }
 
-static int cmd_login(connection_t *conn, char * args){
+static int cmd_login(connection_t *conn, char ** argv, int argc){
 
 	command_login_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0;
-	char ** argv;
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
@@ -362,9 +355,6 @@ static int cmd_login(connection_t *conn, char * args){
 
 	err = NEW(comm_error_t);
 
-	argv = split_arguments(args);
-	argc = count_elements(argv);
-	
 	if(argc != 2){
 		ERROR("Correct use: login username password");
 		return err->code = 10001;
@@ -398,13 +388,11 @@ static int cmd_login(connection_t *conn, char * args){
 	return 0;
 }
 
-static int cmd_logout(connection_t *conn, char * args){
+static int cmd_logout(connection_t *conn, char ** argv, int argc){
 
 	command_logout_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0;
-	char ** argv;
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
@@ -418,9 +406,6 @@ static int cmd_logout(connection_t *conn, char * args){
 		return 1;
 	}
 
-	argv = split_arguments(args);
-	argc = count_elements(argv);
-	
 	if(argc != 0){
 		ERROR("Correct use: logout");
 		return err->code = 10002;
