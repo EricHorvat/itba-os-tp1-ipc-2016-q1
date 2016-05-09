@@ -2,7 +2,7 @@ GCC=gcc
 CFLAGS=-I./ -I./server -I./client -I./logging/headers -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
 CFLAGS+=-Wall
 GCCFLAGS=-pthread
-MATHFLAGS=-lm
+MATHFLAGS=-lm -lrt
 
 GCCMACROS=-D__DEBUG__
 
@@ -60,7 +60,7 @@ ROOT_OBJECTS=$(ROOT_SOURCES:.c=.o)
 
 
 
-all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID) $(LOGGING_ID)
+all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID) $(LOGGING_ID) 
 
 $(CLIENT_ID): $(LIB_ID) $(CLIENT_OBJECTS) $(ROOT_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(CLIENT_OUTPUT) $(ROOT_OBJECTS) $(CLIENT_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS) $(MATHFLAGS)
@@ -68,8 +68,8 @@ $(CLIENT_ID): $(LIB_ID) $(CLIENT_OBJECTS) $(ROOT_OBJECTS)
 $(SERVER_ID):  $(LIB_ID) $(SERVER_OBJECTS) $(ROOT_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(SERVER_OUTPUT) $(ROOT_OBJECTS) $(SERVER_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS) $(MATHFLAGS)
 
-$(LOGGING_ID):  $(LOGGING_OBJECTS) #ADD? $(ROOT_OBJECTS)
-	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(LOGGING_OUTPUT) $(LOGGING_OBJECTS) #$(ROOT_OBJECTS)
+$(LOGGING_ID):  $(LOGGING_OBJECTS) 
+	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(LOGGING_OUTPUT) $(LOGGING_OBJECTS) $(MATHFLAGS) 
 
 $(LIB_ID): $(LIBRARY_OBJECTS)
 	ar rcs $(LIB_OUTPUT) $(LIBRARY_OBJECTS)
@@ -81,7 +81,7 @@ wipe:
 	rm -f /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 clean:
-	rm -rfv *.o client/*.o server/*.o lib/communication/*/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o lib/*.a
+	rm -rfv *.o client/*.o server/*.o logging/*.o lib/communication/*/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o lib/*.a
 	rm -fv /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 .PHONY: all clean

@@ -14,6 +14,7 @@
 #include <serialization.h>
 #include <sqlite.h>
 #include <file_utils.h>
+#include <mqueue.h>
 
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
@@ -164,8 +165,8 @@ static void listen_connections(server_config_t *config) {
 			}
 
 			if (pthread_mutex_init(&lock, NULL) != 0) {
-			    ERROR("mutex init failed");
-			    exit(3);
+					ERROR("mutex init failed");
+					exit(3);
 			}
 
 			while (1) {
@@ -211,6 +212,10 @@ static void listen_connections(server_config_t *config) {
 
 }
 
+mqd_t open_mq();
+
+#define MSQUEUE_NAME "/queue_com"
+
 int main(int argc, char **argv) {
 	
 	
@@ -228,7 +233,29 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
+
+	mqd_t mq;
+	char *buff = "hola";
+
+	mq = open_mq();
+
+	if (mq_send(mq, strdup(buff), 4, 0) != 0) {
+		ERROR("msg q");
+	}
+	
+	mq_close(mq);
+
+
 	listen_connections(config);
 
 	return 0;
+}
+
+mqd_t open_mq(){
+    mqd_t mq;
+    if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY))<0)
+    {
+		printf("%d\n",errno);
+		exit(-1);
+	}
 }

@@ -41,6 +41,8 @@ void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 	LOG("contents: %s", contents);
 
 	err = NEW(comm_error_t);
+	err->msg = "OK";
+	err->code = 0;
 
 	send_data(strdup(contents), size, conn, err);
 
@@ -73,6 +75,7 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 	LOG("file OK");
 
 	err = NEW(comm_error_t);
+	err->msg="OK";
 
 	send_data(strdup(response), strlen(response), conn, err);
 
@@ -84,9 +87,11 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 void process_login_cmd(connection_t *conn, command_login_t *login) {
 
 	comm_error_t *err;
+	err = NEW(comm_error_t);
+			
 	if(user != NULL){
 		ERROR("USER ALREADY LOGGED");
-		err = NEW(comm_error_t);
+		err->msg = "Already logged";
 		send_data("Already logged", 14, conn, err);
 	}
 	else{
@@ -97,13 +102,14 @@ void process_login_cmd(connection_t *conn, command_login_t *login) {
 			/*ERROR*/
 			ERROR("USER DOES NOT EXIST");
 
-			err = NEW(comm_error_t);
+			err->msg = "Login failed";
 
 			send_data("Login failed", 12, conn, err);
 			user = NULL;
 			return;
 		}
 		response = "Login successfully";
+		err->msg = "Login successfully";
 		send_data(strdup(response), strlen(response), conn, err);
 	}
 	return;
@@ -112,13 +118,14 @@ void process_login_cmd(connection_t *conn, command_login_t *login) {
 void process_logout_cmd(connection_t *conn, command_logout_t *logout){
 
 	comm_error_t *err;
+	err = NEW(comm_error_t);
 	if(user != NULL){
-		err = NEW(comm_error_t);
+		err->msg="OK";
 		send_data("Logged out", 10, conn, err);
 	}
 	else{
 		ERROR("ALREADY NOT LOGGED");
-		err = NEW(comm_error_t);
+		err->msg="Already not logged";
 		send_data("Already not logged", 18, conn, err);
 	}
 	return;

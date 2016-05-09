@@ -24,7 +24,6 @@ int main(int argc, char const *argv[])
     printf("Logging service launched successfully\n");
 
 
-    int n = 0;
 	while(!end_service){
 		read_mq(mq, buff);
         if (!strncmp(buff, MSG_END, strlen(MSG_END)))
@@ -34,6 +33,7 @@ int main(int argc, char const *argv[])
         }
         else
         {
+        	printf("%s\n", buff);
         	fputs(buff,log_file);
         }
 
