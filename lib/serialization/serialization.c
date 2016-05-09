@@ -82,6 +82,28 @@ const char* stringify_command_post(command_post_t *cmd) {
 	return json_object_to_json_string(json_object_object);
 }
 
+const char* stringify_command_login(command_login_t *cmd) {
+	json_object *json_object_object = json_object_new_object();
+	json_object *json_object_string_name = json_object_new_string(cmd->user->username);
+	json_object *json_object_string_kind = json_object_new_string("command.login");
+	json_object *json_object_string_pass = json_object_new_string(cmd->user->password);
+
+	json_object_object_add(json_object_object, "kind", json_object_string_kind);
+	json_object_object_add(json_object_object, "username", json_object_string_name);
+	json_object_object_add(json_object_object, "password", json_object_string_pass);
+
+	return json_object_to_json_string(json_object_object);
+}
+
+const char* stringify_command_logout(command_logout_t *cmd) {
+	json_object *json_object_object = json_object_new_object();
+	json_object *json_object_string_kind = json_object_new_string("command.login");
+	
+	json_object_object_add(json_object_object, "kind", json_object_string_kind);
+
+	return json_object_to_json_string(json_object_object);
+}
+
 // Parse
 
 parse_result_t *parse_encoded(const char *json) {
@@ -91,6 +113,8 @@ parse_result_t *parse_encoded(const char *json) {
 	const char *str_value;
 	command_get_t *get_cmd = NULL;
 	command_post_t *post_cmd = NULL;
+	command_login_t *login_cmd = NULL;
+	command_logout_t *logout_cmd = NULL;
 
 	parse_result_t *result = NEW(parse_result_t);
 
@@ -133,29 +157,21 @@ parse_result_t *parse_encoded(const char *json) {
 		
 	} else if (strcmp(kind, "command.post") == 0) {
 
-		int g = 0;
-		printf("%d\n",g++);//0
 		post_cmd = NEW(command_post_t);
-		printf("%d\n",g++);//1
 
 		json_object_object_get_ex(main_object, "data", &aux_object);
 		str_value = json_object_get_string(aux_object);
 		post_cmd->data = (char*)malloc(strlen(str_value)+1);
 		strcpy(post_cmd->data, str_value);
-		printf("%d\n",g++);//2
 
 		json_object_object_get_ex(main_object, "dest", &aux_object);
 		str_value = json_object_get_string(aux_object);
 		post_cmd->dest = (char*)malloc(strlen(str_value)+1);
 		strcpy(post_cmd->dest, str_value);
-		printf("%d\n",g++);//3
-
 		json_object_object_get_ex(main_object, "size", &aux_object);
 		post_cmd->size = json_object_get_int(aux_object);
-		printf("%d\n",g++);//4
 		
 		result->data.post_cmd = post_cmd;
-		printf("%d\n",g++);//5
 
 		return result;
 		
@@ -172,6 +188,33 @@ parse_result_t *parse_encoded(const char *json) {
 
 		return result;
 
+	}  else if (strcmp(kind, "command.login") == 0) {
+
+		login_cmd = NEW(command_login_t);
+		login_cmd->user = NEW (user_t);
+		
+		json_object_object_get_ex(main_object, "username", &aux_object);
+		str_value = json_object_get_string(aux_object);
+		login_cmd->user->username = (char*)malloc(strlen(str_value)+1);
+		strcpy(login_cmd->user->username, str_value);
+		
+		json_object_object_get_ex(main_object, "password", &aux_object);
+		str_value = json_object_get_string(aux_object);
+		login_cmd->user->password = (char*)malloc(strlen(str_value)+1);
+		strcpy(login_cmd->user->password, str_value);
+
+		result->data.login_cmd = login_cmd;
+		
+		return result;
+		
+	} else if (strcmp(kind, "command.logout") == 0) {
+
+		logout_cmd = NEW(command_logout_t);
+		
+		result->data.logout_cmd = logout_cmd;
+		
+		return result;
+		
 	} else {
 		ERROR("Unknown kind");
 	}
@@ -254,6 +297,16 @@ void send_cmd_get(command_get_t *cmd, connection_t *conn, comm_error_t *error) {
 
 void send_cmd_post(command_post_t *cmd, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_command_post(cmd);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
+}
+
+void send_cmd_login(command_login_t *cmd, connection_t *conn, comm_error_t *error) {
+	const char* serialized = stringify_command_login(cmd);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
+}
+
+void send_cmd_logout(command_logout_t *cmd, connection_t *conn, comm_error_t *error) {
+	const char* serialized = stringify_command_logout(cmd);
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 

@@ -9,6 +9,8 @@
 #include <sqlite.h>
 #include <stdlib.h>
 
+fs_user_t * user = NULL;
+
 void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	long size;
@@ -17,7 +19,7 @@ void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 	char * p;
 	char * aux;
 
-	if(!strcmp( ( aux = ask_sql(cmd->path) ), "END" ) ){
+	if(!strcmp( ( aux = ask_for_file_to_db(cmd->path, user) ), "END" ) ){
 		/*ERROR*/
 		ERROR("FILE IS NOT IN DB");
 
@@ -53,34 +55,71 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 
 	comm_error_t *err;
 	size_t path_length;
-	int g=0;
-
-	printf("%d\n", g++);
-
+	
 	char * path = malloc(14+strlen(post->dest)); // 14??
+	char * response;
 	
-	printf("%d\n", g++);
-
-	insert_alias_in_sql(post->dest);
+	insert_alias_in_db(post->dest,user);
 	
 
-	printf("TEST1\n");
 	LOG("FOUND");
 	
-	path_length = sprintf(path,"./fs/mgoffan/%s",post->dest);
+	path_length = sprintf(path,".%s/%s",user->home,post->dest);
 	path[path_length] = '\0';
+	
+	/**/file_from_row_data(path,post->data,post->size);
 
-	printf("TEST\n");
-
-	/**/file_from_row_data(path,decode_to_raw_data(post->data),post->size);
-
+	response = "file OK";
 	LOG("file OK");
 
 	err = NEW(comm_error_t);
 
-	send_data(0, post->size, conn, err);
+	send_data(strdup(response), strlen(response), conn, err);
 
 	if (err->code) {
 		ERROR("send failed with code %d", err->code);
 	}
+}
+
+void process_login_cmd(connection_t *conn, command_login_t *login) {
+
+	comm_error_t *err;
+	if(user != NULL){
+		ERROR("USER ALREADY LOGGED");
+		err = NEW(comm_error_t);
+		send_data("Already logged", 14, conn, err);
+	}
+	else{
+		char * aux;
+		char * response;
+		user = malloc(sizeof(fs_user_t));
+		if((aux = user_identification_in_db(login->user->username,login->user->password,user)) != 0){
+			/*ERROR*/
+			ERROR("USER DOES NOT EXIST");
+
+			err = NEW(comm_error_t);
+
+			send_data("Login failed", 12, conn, err);
+			user = NULL;
+			return;
+		}
+		response = "Login successfully";
+		send_data(strdup(response), strlen(response), conn, err);
+	}
+	return;
+}
+
+void process_logout_cmd(connection_t *conn, command_logout_t *logout){
+
+	comm_error_t *err;
+	if(user != NULL){
+		err = NEW(comm_error_t);
+		send_data("Logged out", 10, conn, err);
+	}
+	else{
+		ERROR("ALREADY NOT LOGGED");
+		err = NEW(comm_error_t);
+		send_data("Already not logged", 18, conn, err);
+	}
+	return;
 }

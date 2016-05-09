@@ -17,13 +17,17 @@ static void write_one_by_one_in_fd(char * str, int write_fd, int size){
 
 static int callback(void * write_p, int argc, char **argv, char **azColName){
 	int write_pipe = *((int*)write_p);
-	int i;
+	int i,n;
+	char * str = malloc(/*CAMBIAR*/2048*sizeof(char));
+	str[0] = '\0';		
 	for(i=0; i<argc; i++){
-		int n;
-		char * str = malloc(/*CAMBIAR*/2048*sizeof(char));
-		n = sprintf(str,"%s\n", argv[i] ? argv[i] : "NULL");
-		write_one_by_one_in_fd(str, write_pipe, n);
+		if(strlen(str) == 0)
+			n = sprintf(str,"%s", argv[i] ? argv[i] : "NULL");
+		else
+			n = sprintf(str,"%s %s", str, argv[i] ? argv[i] : "NULL");
 	}
+	n = sprintf(str,"%s\n", str, argv[i] ? argv[i] : "NULL");
+	write_one_by_one_in_fd(str, write_pipe, n);
 	return 0;
 }
 

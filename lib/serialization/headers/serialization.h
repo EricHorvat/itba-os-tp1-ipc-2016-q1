@@ -20,6 +20,8 @@ typedef struct {
 		void *data;
 		command_get_t *get_cmd;
 		command_post_t *post_cmd;
+		command_login_t *login_cmd;
+		command_logout_t *logout_cmd;
 	} data;
 
 } parse_result_t;
@@ -40,6 +42,8 @@ void send_data_async(void *data, size_t size, connection_t *conn, comm_callback_
 // commands
 void send_cmd_get(command_get_t *cmd, connection_t *conn, comm_error_t *error);
 void send_cmd_post(command_post_t *cmd, connection_t *conn, comm_error_t *error);
+void send_cmd_login(command_login_t *cmd, connection_t *conn, comm_error_t *error);
+void send_cmd_logout(command_logout_t *cmd, connection_t *conn, comm_error_t *error);
 
 // commands async
 void send_cmd_get_async(command_get_t *cmd, connection_t *conn, comm_callback_t cb);
@@ -53,6 +57,8 @@ const char* stringify_data(void*, size_t);
 
 const char* stringify_command_get(command_get_t *cmd);
 const char* stringify_command_post(command_post_t *cmd);
+const char* stringify_command_login(command_login_t *cmd);
+const char* stringify_command_logout(command_logout_t *cmd);
 
 // parse
 parse_result_t *parse_encoded(const char *json);

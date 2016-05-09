@@ -71,5 +71,8 @@ typedef char* string;
 
 int getrnd(int, int);
 char *gen_boundary();
+char ** split_arguments(char * sentence);
+char ** add(char * str, char ** str_vector, int cant);
+int count_elements(char ** vector);
 
 #endif

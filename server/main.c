@@ -84,6 +84,20 @@ static void* server_responder(void* data) {
 		process_post_cmd(req->connection, result->data.post_cmd);
 
 		
+	}else if ( strcmp(result->kind, "command.login") == 0 ) {
+
+		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.login_cmd->user->username);
+
+		process_login_cmd(req->connection, result->data.login_cmd);
+
+		
+	}else if ( strcmp(result->kind, "command.logout") == 0 ) {
+
+		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.login_cmd->user->username);
+
+		process_logout_cmd(req->connection, result->data.login_cmd);
+
+		
 	}
 	pthread_mutex_unlock(&lock);
 

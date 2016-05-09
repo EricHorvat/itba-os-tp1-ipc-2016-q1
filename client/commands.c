@@ -12,6 +12,7 @@ typedef struct {
 } client_command_t;
 
 static bool initialized_commands = no;
+static bool logged = no;
 
 static void initialize_commands();
 
@@ -20,6 +21,8 @@ static int cmd_sendi(connection_t *conn, char* args);
 static int cmd_sendd(connection_t *conn, char* args);
 static int cmd_get(connection_t *conn, char* args);
 static int cmd_post(connection_t *conn, char* args);
+static int cmd_login(connection_t *conn, char* args);
+static int cmd_logout(connection_t *conn, char* args);
 
 static client_command_t **commands;
 
@@ -69,6 +72,16 @@ static void initialize_commands() {
 	commands[i]->cmd = &cmd_post;
 	commands[i++]->help = "Post help";
 
+	commands[i] = NEW(client_command_t);
+	commands[i]->name = "login";
+	commands[i]->cmd = &cmd_login;
+	commands[i++]->help = "Login help";
+
+	commands[i] = NEW(client_command_t);
+	commands[i]->name = "logout";
+	commands[i]->cmd = &cmd_logout;
+	commands[i++]->help = "Logout help";
+
 	commands[i] = NULL;
 }
 
@@ -90,8 +103,9 @@ int cmd_parse(connection_t *conn, char * cmd) {
 			while (commands[j] != NULL) {
 
 				if (strncmp(start, commands[j]->name, i) == 0) {
-
-					return commands[j]->cmd(conn, cmd+1);
+					int error_code;
+					error_code = commands[j]->cmd(conn, cmd+1);
+					return error_code;
 				}
 
 				j++;
@@ -207,12 +221,6 @@ static int cmd_sendd(connection_t *conn, char* args) {
 	return 0;
 }
 
-/*CHANGE THIS*/
-char ** split_arguments(char * sentence);
-char ** add(char * str, char ** str_vector, int cant);
-int count_elements(char ** vector);
-/***********/
-
 static int cmd_get(connection_t *conn, char* arg_str) {
 
 	command_get_t *cmd;
@@ -224,6 +232,12 @@ static int cmd_get(connection_t *conn, char* arg_str) {
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
 		WARN("Please open connection first");
+
+		return 1;
+	}
+
+	if(!logged){
+		WARN("Please login first");
 
 		return 1;
 	}
@@ -271,12 +285,18 @@ static int cmd_post(connection_t *conn, char * args){
 	command_post_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	int argc = 0, g=0;
+	int argc = 0;
 	char ** argv;
 
 	if (conn->state != CONNECTION_STATE_OPEN) {
 
 		WARN("Please open connection first");
+
+		return 1;
+	}
+
+	if(!logged){
+		WARN("Please login first");
 
 		return 1;
 	}
@@ -322,72 +342,111 @@ static int cmd_post(connection_t *conn, char * args){
 	return 0;
 }
 
-/*FIJARSE DONDE PONERLO*/
-char** split_arguments(char * sentence){
+static int cmd_login(connection_t *conn, char * args){
 
-	int index=0, last_begin=0, count=0, last_was_char=no, quotation_open=no;
-	char ** result;
-	
+	command_login_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+	int argc = 0;
+	char ** argv;
 
-	while(sentence[index] != '\0') {
-		if (sentence[index] == ' '){
-    		if (last_was_char==yes && !quotation_open){
-        		count++;
-	
-        		char * aux_str = malloc(sizeof(char)*(index-last_begin+1));
+	if (conn->state != CONNECTION_STATE_OPEN) {
 
-				memset(aux_str, '\0', (index-last_begin+1));
-        		strncpy(aux_str, sentence+last_begin, index-last_begin);
-        		aux_str[index-last_begin] = '\0';
-        		
-        		result = add(aux_str, result, count);
-    		}
-    		last_was_char=no;
-		}
-		else{
-				if(!quotation_open && last_was_char==no){ last_begin = index;}
-		    	last_was_char=yes;
-		    	if (sentence[index] == '\"') 
-				quotation_open = !quotation_open;
-		    }
+		WARN("Please open connection first");
 
-    	index++;
+		return 1;
 	}
 
-	if(last_was_char==yes){
-		if(quotation_open)
-			return NULL;
-		else{
-			count++;
-			char * aux_str = malloc(sizeof(char)*(index-last_begin+1));
-        	strncpy(aux_str, sentence + last_begin, index-last_begin);
-        	aux_str[index-last_begin] = '\0';
-        		
-        		
-        	result = add(aux_str, result, count);
-    		
-		}
-	}
-	result= add("\0", result,count+1);
-	return result;
-}
+	cmd = NEW(command_login_t);
+	cmd->user = NEW(user_t);
 
-char ** add(char * str, char ** str_vector, int cant){
+	err = NEW(comm_error_t);
+
+	argv = split_arguments(args);
+	argc = count_elements(argv);
 	
-	char ** aux = malloc(sizeof(char*)*cant);
-	int i;
-	for(i = 0; i < cant-1 ; i++){
-    	aux[i] = str_vector[i];
+	if(argc != 2){
+		ERROR("Correct use: login username password");
+		return err->code = 10001;
 	}
-	aux[cant-1] = str;
-	return aux;
+
+	cmd->user->username = strdup(argv[0]);
+	cmd->user->password = strdup(argv[1]);
+
+	send_cmd_login(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
+	logged = yes;
+	return 0;
 }
 
-int count_elements(char ** vector){
+static int cmd_logout(connection_t *conn, char * args){
 
-	int count = 0;
-	while(strcmp(vector[count],"\0"))
-		count++;
-	return count;
+	command_logout_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+	int argc = 0;
+	char ** argv;
+
+	if (conn->state != CONNECTION_STATE_OPEN) {
+
+		WARN("Please open connection first");
+		return 1;
+	}
+	
+	if(!logged){
+		WARN("You have to be logged to logout");
+
+		return 1;
+	}
+
+	argv = split_arguments(args);
+	argc = count_elements(argv);
+	
+	if(argc != 0){
+		ERROR("Correct use: logout");
+		return err->code = 10002;
+	}
+
+	send_cmd_logout(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
+	logged = no;
+	return 0;
 }
-/* s */

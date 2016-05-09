@@ -7,10 +7,6 @@
 
 #define BOUNDARY_PREFIX "--boundaryTPSO1IPC"
 
-#ifndef RAND_MAX
-#define RAND_MAX 32767
-#endif
-
 static bool seeded = false;
 
 static int rand_max_digits = -1;
