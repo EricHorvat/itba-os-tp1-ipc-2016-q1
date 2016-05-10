@@ -155,6 +155,12 @@ comm_error_code_t connection_close(connection_t *conn) {
 	response_fifo_len = sprintf(response_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
 	response_fifo[response_fifo_len] = '\0';
 
+	close(conn->res_fd);
+	close(conn->req_fd);
+
+	conn->res_fd = 0;
+	conn->req_fd = 0;
+
 	if (exists(request_fifo))
 		unlink(request_fifo);
 

@@ -104,6 +104,16 @@ const char* stringify_command_logout(command_logout_t *cmd) {
 	return json_object_to_json_string(json_object_object);
 }
 
+
+const char* stringify_command_close(command_close_t *cmd) {
+	json_object *json_object_object = json_object_new_object();
+	json_object *json_object_string_kind = json_object_new_string("command.close");
+	
+	json_object_object_add(json_object_object, "kind", json_object_string_kind);
+
+	return json_object_to_json_string(json_object_object);
+}
+
 // Parse
 
 parse_result_t *parse_encoded(const char *json) {
@@ -115,6 +125,7 @@ parse_result_t *parse_encoded(const char *json) {
 	command_post_t *post_cmd = NULL;
 	command_login_t *login_cmd = NULL;
 	command_logout_t *logout_cmd = NULL;
+	command_close_t *close_cmd = NULL;
 
 	parse_result_t *result = NEW(parse_result_t);
 
@@ -215,6 +226,14 @@ parse_result_t *parse_encoded(const char *json) {
 		
 		return result;
 		
+	}  else if (strcmp(kind, "command.close") == 0) {
+
+		close_cmd = NEW(command_close_t);
+		
+		result->data.close_cmd = close_cmd;
+		
+		return result;
+		
 	} else {
 		ERROR("Unknown kind");
 	}
@@ -307,6 +326,11 @@ void send_cmd_login(command_login_t *cmd, connection_t *conn, comm_error_t *erro
 
 void send_cmd_logout(command_logout_t *cmd, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_command_logout(cmd);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
+}
+
+void send_cmd_close(command_close_t *cmd, connection_t *conn, comm_error_t *error) {
+	const char* serialized = stringify_command_close(cmd);
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 

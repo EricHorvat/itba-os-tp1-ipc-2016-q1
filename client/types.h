@@ -27,6 +27,9 @@ typedef struct {
 } command_logout_t;
 
 typedef struct {
+} command_close_t;
+
+typedef struct {
 	user_t *user;
 } command_register_user_t;
 

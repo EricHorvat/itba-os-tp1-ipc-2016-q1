@@ -255,6 +255,7 @@ mqd_t open_mq(){
     mqd_t mq;
     if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY))<0)
     {
+    	//AGREGAR EXECV
 		printf("%d\n",errno);
 		exit(-1);
 	}

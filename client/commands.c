@@ -6,23 +6,31 @@
 #include <file_utils.h>
 
 typedef struct {
-	char *name;
-	int (*cmd)(connection_t *, char ** argv, int argc);
+	char *correct_use;
 	char *help;
+} client_command_info_t;
+
+typedef struct {
+	char *name;
+	int (*cmd)(connection_t *, client_command_info_t * info, char ** argv, int argc);
+	client_command_info_t * info;
 } client_command_t;
 
 static bool initialized_commands = no;
 static bool logged = no;
 
 static void initialize_commands();
+static client_command_t * new_command(char * name, char * correct_use, char * help, int (*cmd)(connection_t *, client_command_info_t * info, char ** argv, int argc));
+static bool show_help_for_command(char* arg, client_command_info_t * info);
 
-static int cmd_open(connection_t *,  char ** argv, int argc);
-static int cmd_sendi(connection_t *conn,  char ** argv, int argc);
-static int cmd_sendd(connection_t *conn,  char ** argv, int argc);
-static int cmd_get(connection_t *conn,  char ** argv, int argc);
-static int cmd_post(connection_t *conn,  char ** argv, int argc);
-static int cmd_login(connection_t *conn,  char ** argv, int argc);
-static int cmd_logout(connection_t *conn,  char ** argv, int argc);
+static int cmd_open(connection_t *, client_command_info_t * info, char ** argv, int argc);
+static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_sendd(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_get(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_post(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_login(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_close(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 
 static client_command_t **commands;
 
@@ -32,64 +40,47 @@ static void initialize_commands() {
 
 	commands = (client_command_t**)malloc(50*sizeof(client_command_t*));
 
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "open";
-	commands[i]->cmd = &cmd_open;
-	commands[i++]->help = "Open help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "close";
-	commands[i]->cmd = &cmd_open;
-	commands[i++]->help = "Close help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "sendi";
-	commands[i]->cmd = &cmd_sendi;
-	commands[i++]->help = "Sendi help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "sendd";
-	commands[i]->cmd = &cmd_sendd;
-	commands[i++]->help = "Sendd help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "sends";
-	commands[i]->cmd = &cmd_open;
-	commands[i++]->help = "Sends help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "help";
-	commands[i]->cmd = &cmd_open;
-	commands[i++]->help = "Help help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "get";
-	commands[i]->cmd = &cmd_get;
-	commands[i++]->help = "Get help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "post";
-	commands[i]->cmd = &cmd_post;
-	commands[i++]->help = "Post help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "login";
-	commands[i]->cmd = &cmd_login;
-	commands[i++]->help = "Login help";
-
-	commands[i] = NEW(client_command_t);
-	commands[i]->name = "logout";
-	commands[i]->cmd = &cmd_logout;
-	commands[i++]->help = "Logout help";
-
+	commands[i++] = new_command(strdup("open"),"open url","CAMopen help", &cmd_open);
+	commands[i++] = new_command("close","close","CAMclose help", &cmd_close);
+	commands[i++] = new_command("sendi","sendi int","CAMsendi help", &cmd_sendi);
+	commands[i++] = new_command("sendd","sendd double","CAMsendd help", &cmd_sendi);
+	commands[i++] = new_command("sends","sends string","CAMsends help", &cmd_open);
+	commands[i++] = new_command("help","help command","CAMhelp help", &cmd_open);
+	commands[i++] = new_command("get","get alias","CAMget help", &cmd_get);
+	commands[i++] = new_command("post","post alias file","CAMpost help", &cmd_post);
+	commands[i++] = new_command("login","login username password","CAMlogin help", &cmd_login);
+	commands[i++] = new_command("logout","logout","CAMlogout help", &cmd_logout);
+	printf("%s\n", commands[1]->name);
 	commands[i] = NULL;
+}
+
+
+static client_command_t * new_command(char * name, char * correct_use, char * help 
+		, int (*cmd)(connection_t *,client_command_info_t * info,  char ** argv, int argc)){
+	
+	client_command_t * command;
+	command = NEW(client_command_t);
+	command->info = NEW(client_command_info_t);
+	command->name = strdup(name);
+	command->cmd = cmd;
+	command->info->correct_use = correct_use;
+	command->info->help = help;
+	return command;
+}
+
+static bool show_help_for_command(char* arg, client_command_info_t * info){
+
+	if(strcmp("help", arg)==0){
+		LOG("%s",info->help);
+		return yes;
+	}
+	return no;
 }
 
 int cmd_parse(connection_t *conn, char * cmd) {
 
 	char ** comms;
 	int argc;
-	// char **cmds = commands;
 	int i = 0, j = 0;
 
 	if (!initialized_commands) {
@@ -100,12 +91,11 @@ int cmd_parse(connection_t *conn, char * cmd) {
 	comms = split_arguments(cmd);
 	argc = count_elements(comms);
 
-
 	while (commands[j] != NULL) {
 
 		if (strcmp(comms[0], commands[j]->name) == 0) {
 			int error_code;
-			error_code = commands[j]->cmd(conn, comms+1,argc-1);
+			error_code = commands[j]->cmd(conn, commands[j]->info, comms+1,argc-1);
 			return error_code;
 		}
 		j++;
@@ -116,17 +106,17 @@ int cmd_parse(connection_t *conn, char * cmd) {
 
 }
 
-static int cmd_open(connection_t *conn, char ** argv, int argc) {
+static int cmd_open(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
 
 	int conn_error = -4;
 
 	conn->server_addr = NEW(comm_addr_t);
 	
 	if(argc != 1){
-		ERROR("Correct use: open url");
+		ERROR("Correct use: %s",info->correct_use);
 		return 1;
-
 	}
+	if(show_help_for_command(argv[0],info)) return 0;
 
 	if (address_from_url(argv[0], conn->server_addr)) {
 		return 5;
@@ -141,7 +131,7 @@ static int cmd_open(connection_t *conn, char ** argv, int argc) {
 
 }
 
-static int cmd_sendi(connection_t *conn, char ** argv, int argc) {
+static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
 
 	comm_error_t *err;
 	parse_result_t *presult;
@@ -154,10 +144,11 @@ static int cmd_sendi(connection_t *conn, char ** argv, int argc) {
 	}
 
 	if(argc != 1){
-		ERROR("Correct use: sendi int");
+		ERROR("Correct use: %s",info->correct_use);
 		return 1;
 
 	}
+	if(show_help_for_command(argv[0],info)) return 0;
 
 	err = NEW(comm_error_t);
 
@@ -190,7 +181,7 @@ static int cmd_sendi(connection_t *conn, char ** argv, int argc) {
 	return 0;
 }
 
-static int cmd_sendd(connection_t *conn, char ** argv, int argc) {
+static int cmd_sendd(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
 
 	comm_error_t *err;
 	parse_result_t *presult;
@@ -201,6 +192,7 @@ static int cmd_sendd(connection_t *conn, char ** argv, int argc) {
 
 		return 1;
 	}
+	if(show_help_for_command(argv[0],info)) return 0;
 
 	err = NEW(comm_error_t);
 
@@ -227,7 +219,7 @@ static int cmd_sendd(connection_t *conn, char ** argv, int argc) {
 	return 0;
 }
 
-static int cmd_get(connection_t *conn, char ** argv, int argc) {
+static int cmd_get(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
 
 	command_get_t *cmd;
 	comm_error_t *err;
@@ -251,9 +243,10 @@ static int cmd_get(connection_t *conn, char ** argv, int argc) {
 	err = NEW(comm_error_t);
 
 	if(argc != 1){
-		ERROR("TOO MUCH ARGUMENTS");
+		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10000;
 	}
+	if(show_help_for_command(argv[0],info)) return 0;
 
 	cmd->path = argv[0];
 
@@ -281,7 +274,7 @@ static int cmd_get(connection_t *conn, char ** argv, int argc) {
 	return 0;
 }
 
-static int cmd_post(connection_t *conn, char ** argv, int argc){
+static int cmd_post(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
 	
 	command_post_t *cmd;
 	comm_error_t *err;
@@ -304,7 +297,10 @@ static int cmd_post(connection_t *conn, char ** argv, int argc){
 	err = NEW(comm_error_t);
 
 	if(argc != 2){
-		ERROR("Correct use: post alias file");
+		
+		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+		
+		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10001;
 	}
 
@@ -337,7 +333,7 @@ static int cmd_post(connection_t *conn, char ** argv, int argc){
 	return 0;
 }
 
-static int cmd_login(connection_t *conn, char ** argv, int argc){
+static int cmd_login(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
 
 	command_login_t *cmd;
 	comm_error_t *err;
@@ -356,7 +352,8 @@ static int cmd_login(connection_t *conn, char ** argv, int argc){
 	err = NEW(comm_error_t);
 
 	if(argc != 2){
-		ERROR("Correct use: login username password");
+		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10001;
 	}
 
@@ -388,7 +385,7 @@ static int cmd_login(connection_t *conn, char ** argv, int argc){
 	return 0;
 }
 
-static int cmd_logout(connection_t *conn, char ** argv, int argc){
+static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
 
 	command_logout_t *cmd;
 	comm_error_t *err;
@@ -406,8 +403,9 @@ static int cmd_logout(connection_t *conn, char ** argv, int argc){
 		return 1;
 	}
 
-	if(argc != 0){
-		ERROR("Correct use: logout");
+	if(argc != 0){	
+		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10002;
 	}
 
@@ -433,5 +431,39 @@ static int cmd_logout(connection_t *conn, char ** argv, int argc){
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
 	logged = no;
+	return 0;
+}
+
+static int cmd_close(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
+
+	command_close_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+
+	if (conn->state != CONNECTION_STATE_OPEN) {
+
+		WARN("Please open connection first");
+		return 1;
+	}
+
+	if(logged){
+		WARN("You have not to be logged to close");
+
+		return 1;
+	}
+
+	if(argc != 0){
+		if(argc==1 && show_help_for_command(argv[0],info)) return 0;
+		ERROR("Correct use: %s",info->correct_use);
+		return err->code = 10002;
+	}
+
+	send_cmd_close(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
 	return 0;
 }
