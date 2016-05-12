@@ -23,14 +23,17 @@ static void initialize_commands();
 static client_command_t * new_command(char * name, char * correct_use, char * help, int (*cmd)(connection_t *, client_command_info_t * info, char ** argv, int argc));
 static bool show_help_for_command(char* arg, client_command_info_t * info);
 
-static int cmd_open(connection_t *, client_command_info_t * info, char ** argv, int argc);
+static int cmd_open(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_sendd(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_sends(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_get(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_post(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_login(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_close(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_commands(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_help(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 
 static client_command_t **commands;
 
@@ -44,13 +47,13 @@ static void initialize_commands() {
 	commands[i++] = new_command("close","close","CAMclose help", &cmd_close);
 	commands[i++] = new_command("sendi","sendi int","CAMsendi help", &cmd_sendi);
 	commands[i++] = new_command("sendd","sendd double","CAMsendd help", &cmd_sendi);
-	commands[i++] = new_command("sends","sends string","CAMsends help", &cmd_open);
-	commands[i++] = new_command("help","help command","CAMhelp help", &cmd_open);
+	commands[i++] = new_command("sends","sends string","CAMsends help", &cmd_sends);
+	commands[i++] = new_command("help","help command","CAMhelp help", &cmd_help);
 	commands[i++] = new_command("get","get alias","CAMget help", &cmd_get);
 	commands[i++] = new_command("post","post alias file","CAMpost help", &cmd_post);
 	commands[i++] = new_command("login","login username password","CAMlogin help", &cmd_login);
 	commands[i++] = new_command("logout","logout","CAMlogout help", &cmd_logout);
-	printf("%s\n", commands[1]->name);
+	commands[i++] = new_command("commands","commands","CAMcommands help", &cmd_commands);
 	commands[i] = NULL;
 }
 
@@ -112,12 +115,20 @@ static int cmd_open(connection_t *conn, client_command_info_t * info, char ** ar
 
 	conn->server_addr = NEW(comm_addr_t);
 	
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	
+	if (isConnectionOpen(conn)) {
+
+		WARN("Opened connection");
+
+		return 1;
+	}
+
 	if(argc != 1){
 		ERROR("Correct use: %s",info->correct_use);
 		return 1;
 	}
-	if(show_help_for_command(argv[0],info)) return 0;
-
+	
 	if (address_from_url(argv[0], conn->server_addr)) {
 		return 5;
 	}
@@ -136,7 +147,9 @@ static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** a
 	comm_error_t *err;
 	parse_result_t *presult;
 
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
@@ -148,8 +161,7 @@ static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** a
 		return 1;
 
 	}
-	if(show_help_for_command(argv[0],info)) return 0;
-
+	
 	err = NEW(comm_error_t);
 
 	INFO("sending %s", argv[0]);
@@ -181,19 +193,70 @@ static int cmd_sendi(connection_t *conn, client_command_info_t * info, char ** a
 	return 0;
 }
 
-static int cmd_sendd(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
+static int cmd_sends(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
 
 	comm_error_t *err;
 	parse_result_t *presult;
 
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
 		return 1;
 	}
-	if(show_help_for_command(argv[0],info)) return 0;
 
+	if(argc != 1){
+		ERROR("Correct use: %s",info->correct_use);
+		return 1;
+	}
+	
+	err = NEW(comm_error_t);
+
+	INFO("sending %s", argv[0]);
+
+	send_string(argv[0], conn, err);
+
+	INFO("sent %s", argv[0]);
+
+	if (err->code) {
+		ERROR("send failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "string") == 0) {
+		SUCCESS("response: %s", presult->data.str);
+	}
+
+	return 0;
+}
+
+static int cmd_sendd(connection_t *conn, client_command_info_t * info, char ** argv, int argc) {
+
+	comm_error_t *err;
+	parse_result_t *presult;
+
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;	
+
+	if (!isConnectionOpen(conn)) {
+
+		WARN("Please open connection first");
+
+		return 1;
+	}
+	
 	err = NEW(comm_error_t);
 
 	send_int(atof(argv[0]), conn, err);
@@ -225,7 +288,9 @@ static int cmd_get(connection_t *conn, client_command_info_t * info, char ** arg
 	comm_error_t *err;
 	parse_result_t *presult;
 	
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
@@ -246,8 +311,7 @@ static int cmd_get(connection_t *conn, client_command_info_t * info, char ** arg
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10000;
 	}
-	if(show_help_for_command(argv[0],info)) return 0;
-
+	
 	cmd->path = argv[0];
 
 	send_cmd_get(cmd, conn, err);
@@ -279,7 +343,10 @@ static int cmd_post(connection_t *conn, client_command_info_t * info, char ** ar
 	command_post_t *cmd;
 	comm_error_t *err;
 	parse_result_t *presult;
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
@@ -297,8 +364,6 @@ static int cmd_post(connection_t *conn, client_command_info_t * info, char ** ar
 	err = NEW(comm_error_t);
 
 	if(argc != 2){
-		
-		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
 		
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10001;
@@ -339,7 +404,9 @@ static int cmd_login(connection_t *conn, client_command_info_t * info, char ** a
 	comm_error_t *err;
 	parse_result_t *presult;
 
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
@@ -352,7 +419,6 @@ static int cmd_login(connection_t *conn, client_command_info_t * info, char ** a
 	err = NEW(comm_error_t);
 
 	if(argc != 2){
-		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10001;
 	}
@@ -391,7 +457,9 @@ static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** 
 	comm_error_t *err;
 	parse_result_t *presult;
 
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 		return 1;
@@ -404,7 +472,6 @@ static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** 
 	}
 
 	if(argc != 0){	
-		if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10002;
 	}
@@ -440,7 +507,9 @@ static int cmd_close(connection_t *conn, client_command_info_t * info, char ** a
 	comm_error_t *err;
 	parse_result_t *presult;
 
-	if (conn->state != CONNECTION_STATE_OPEN) {
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+
+	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 		return 1;
@@ -448,17 +517,18 @@ static int cmd_close(connection_t *conn, client_command_info_t * info, char ** a
 
 	if(logged){
 		WARN("You have not to be logged to close");
-
 		return 1;
 	}
 
 	if(argc != 0){
-		if(argc==1 && show_help_for_command(argv[0],info)) return 0;
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10002;
 	}
 
-	send_cmd_close(cmd, conn, err);
+	
+	send_cmd_close(cmd, conn, err); //-> should set CONNECTION_STATE_CLOSED, close only one fifo and exit 
+
+	conn->state = CONNECTION_STATE_CLOSED;
 
 	if (err->code) {
 		ERROR("send failed code %d msg: %s", err->code, err->msg);
@@ -466,4 +536,46 @@ static int cmd_close(connection_t *conn, client_command_info_t * info, char ** a
 	}
 
 	return 0;
+}
+
+static int cmd_commands(connection_t *conn, client_command_info_t * info, char** argv, int argc){
+
+	int i = 0;
+
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	while(commands[i] != NULL){
+
+		printf("%s\n", commands[i]->name);
+		i++;
+	}
+	return 0;
+}
+
+static int cmd_help(connection_t *conn, client_command_info_t * info, char** argv, int argc){
+
+	int i = 0;
+	comm_error_t *err;
+	
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+	
+	if(argc != 1){
+		ERROR("Correct use: %s",info->correct_use);
+		return err->code = 10002;
+	}
+
+	while(commands[i] != NULL){
+		if(strcmp(commands[i]->name,argv[0])==0){
+			printf("%s\n", commands[i]->info->correct_use);
+		}
+		i++;
+	}
+	return 0;
+}
+
+bool isConnectionOpen(connection_t * conn){
+	return conn->state == CONNECTION_STATE_OPEN;  
+}
+
+bool isConnectionClosed(connection_t * conn){
+	return conn->state == CONNECTION_STATE_CLOSED;  
 }

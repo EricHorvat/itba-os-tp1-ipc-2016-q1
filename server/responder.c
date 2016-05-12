@@ -63,16 +63,12 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 	
 	insert_alias_in_db(post->dest,user);
 	
-
-	LOG("FOUND");
-	
 	path_length = sprintf(path,".%s/%s",user->home,post->dest);
 	path[path_length] = '\0';
 	
 	/**/file_from_row_data(path,post->data,post->size);
 
 	response = "file OK";
-	LOG("file OK");
 
 	err = NEW(comm_error_t);
 	err->msg="OK";
@@ -122,11 +118,19 @@ void process_logout_cmd(connection_t *conn, command_logout_t *logout){
 	if(user != NULL){
 		err->msg="OK";
 		send_data("Logged out", 10, conn, err);
+		user=NULL;
 	}
 	else{
 		ERROR("ALREADY NOT LOGGED");
 		err->msg="Already not logged";
 		send_data("Already not logged", 18, conn, err);
 	}
+	return;
+}
+
+void process_close_cmd(connection_t *conn, command_close_t *close){
+
+	comm_error_t *err;
+	err = NEW(comm_error_t);
 	return;
 }

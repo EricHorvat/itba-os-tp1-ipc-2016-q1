@@ -90,8 +90,12 @@ static void* server_responder(void* data) {
 		
 	} else if ( strcmp(result->kind, "command.logout") == 0 ) {
 
-		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.login_cmd->user->username);
-		process_logout_cmd(req->connection, result->data.login_cmd);
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, NULL);
+		process_logout_cmd(req->connection, result->data.logout_cmd);
+	} else if ( strcmp(result->kind, "command.clsoe") == 0 ) {
+
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, NULL);
+		process_close_cmd(req->connection, result->data.login_cmd);
 	}
 	pthread_mutex_unlock(&lock);
 
