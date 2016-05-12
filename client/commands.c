@@ -524,7 +524,6 @@ static int cmd_new_user(connection_t *conn, client_command_info_t * info, char *
 	
 	if(!logged){
 		WARN("You have to be logged");
-
 		return 1;
 	}
 
@@ -532,6 +531,23 @@ static int cmd_new_user(connection_t *conn, client_command_info_t * info, char *
 		ERROR("Correct use: %s",info->correct_use);
 		return err->code = 10002;
 	}
+
+	cmd->user->username = strdup(argv[0]);
+	if(strcmp(argv[1],"yes")==0){
+		cmd->user->admin=yes;
+	} else if (strcmp(argv[1],"no")==0){
+		cmd->user->admin=yes;
+	} else {
+		ERROR("Correct use: %s",info->correct_use);
+		return err->code = 10002;
+	}
+
+	if(argc == 2){
+		cmd->user->password = "pass123";
+	}else{
+		cmd->user->password = strdup(argv[2]);
+	}
+
 
 	send_cmd_new_user(cmd, conn, err);
 

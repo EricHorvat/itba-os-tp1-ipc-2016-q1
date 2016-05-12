@@ -99,6 +99,11 @@ static void* server_responder(void* data) {
 		//WTF?
 		/*connection_close(conn);
 		printf("PLPL%s\n");*/
+		//req->connetion->state == CONNECTION_STATE_CLOSED;
+	} else if ( strcmp(result->kind, "command.new_user") == 0 ) {
+
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
+		process_new_user_cmd(req->connection, result->data.new_user_cmd);
 	}
 	pthread_mutex_unlock(&lock);
 

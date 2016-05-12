@@ -11,6 +11,8 @@
 
 fs_user_t * user = NULL;
 
+bool check_user_logged(fs_user_t * user, connection_t * conn, comm_error_t * err);
+
 void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	long size;
@@ -18,6 +20,9 @@ void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 	comm_error_t *err;
 	char * p;
 	char * aux;
+	err = NEW(comm_error_t);
+
+	if(!check_user_logged(user,conn,err)){return;}
 
 	if(!strcmp( ( aux = ask_for_file_to_db(cmd->path, user) ), "END" ) ){
 		/*ERROR*/
@@ -40,7 +45,6 @@ void process_get_cmd(connection_t *conn, command_get_t *cmd) {
 
 	LOG("contents: %s", contents);
 
-	err = NEW(comm_error_t);
 	err->msg = "OK";
 	err->code = 0;
 
@@ -57,7 +61,10 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 
 	comm_error_t *err;
 	size_t path_length;
-	
+	err = NEW(comm_error_t);
+			
+	if(!check_user_logged(user,conn,err)){return;}
+
 	char * path = malloc(14+strlen(post->dest)); // 14??
 	char * response;
 	
@@ -70,7 +77,6 @@ void process_post_cmd(connection_t *conn, command_post_t *post) {
 
 	response = "file OK";
 
-	err = NEW(comm_error_t);
 	err->msg="OK";
 
 	send_data(strdup(response), strlen(response), conn, err);
@@ -115,22 +121,66 @@ void process_logout_cmd(connection_t *conn, command_logout_t *logout){
 
 	comm_error_t *err;
 	err = NEW(comm_error_t);
-	if(user != NULL){
-		err->msg="OK";
-		send_data("Logged out", 10, conn, err);
-		user=NULL;
+	if(!check_user_logged(user,conn,err)){
+		return;
 	}
-	else{
-		ERROR("ALREADY NOT LOGGED");
-		err->msg="Already not logged";
-		send_data("Already not logged", 18, conn, err);
-	}
+	err->msg="OK";
+	send_data("Logged out", 10, conn, err);
+	user=NULL;
 	return;
 }
 
-void process_close_cmd(connection_t *conn, command_close_t *close){
+void process_new_user_cmd(connection_t * conn, command_new_user_t *new_user){
 
 	comm_error_t *err;
 	err = NEW(comm_error_t);
-	return;
+	if(!check_user_logged(user,conn,err)){
+		return;
+	}
+	if(user->is_admin == no){
+		ERROR("USER HAVE NOT PERMISION");
+		err->msg = "HAVE NOT PERMISION";
+		send_data("HAVE NOT PERMISION", 10, conn, err);
+		return;
+	}
+	printf("%s\n",new_user->user->username);
+	create_user_folder(new_user->user->username);
+	new_user_in_db(new_user->user->username);
+	printf("ddd%s\n",new_user->user->username);
+	//insert in db
+	//returnok
+}
+
+bool check_user_logged(fs_user_t * user, connection_t * conn, comm_error_t * err){
+	if(user == NULL){
+		ERROR("USER NOT LOGGED");
+		err->msg = "NOT logged";
+		send_data("NOT logged", 10, conn, err);
+		return no;
+	}
+	return yes;
+}
+
+void create_user_folder(char * username){
+	int child_pid = 0;
+	printf("%s\n", username);
+	if((child_pid = fork())==0){
+		char ** args, ** envp;
+		char * cmd, * path;
+		cmd = "/bin/mkdir";
+		args = malloc(sizeof(char*)*3);
+		envp = malloc(sizeof(char*));
+		path = malloc(sizeof(char)*(5+strlen(username)+1));
+		sprintf(path,"./fs/%s",username);
+		envp[0]=NULL;
+		args[0]=cmd;
+		args[1]=path;
+		args[2]=NULL;
+		printf("a %s\n", username);
+		execve(strdup(cmd),args,envp);
+	}else if( child_pid < 0){
+		ERROR("CANT FORK");
+		return;
+	}
+	waitpid(child_pid);
 }

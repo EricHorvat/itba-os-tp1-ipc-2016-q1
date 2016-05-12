@@ -254,6 +254,7 @@ parse_result_t *parse_encoded(const char *json) {
 		new_user_cmd = NEW(command_new_user_t);
 		
 		result->data.new_user_cmd = new_user_cmd;
+		result->data.new_user_cmd->user = NEW(user_t);
 		
 		json_object_object_get_ex(main_object, "username", &aux_object);
 		str_value = json_object_get_string(aux_object);

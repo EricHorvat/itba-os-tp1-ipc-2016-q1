@@ -2,6 +2,7 @@
 #define __COMMANDS_TYPES_H__
 
 #include <utils.h>
+#include <stdlib.h>
 
 typedef struct {
 	char *path;

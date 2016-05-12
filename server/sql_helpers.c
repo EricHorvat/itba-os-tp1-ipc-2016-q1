@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <utils.h>
 #include <stdlib.h>
+#include <types.h>
 
 sql_connection_t * sql_connection = NULL;
 
@@ -104,3 +105,32 @@ int user_identification_in_db(char * username, char * password, fs_user_t * user
 	return 0;
 }
 
+
+int new_user_in_db(user_t * user){
+	sqlite_insert_query_t * query = malloc(sizeof(sqlite_insert_query_t));
+	char * ans;
+	
+	create_insert_query(query);
+	set_insert_query_table(query,"users");
+
+	char * name_str = malloc((1+strlen(user->username)+2)*sizeof(char)); 
+	char * pass_str = malloc((1+strlen(user->password)+2)*sizeof(char)); 
+	char * home_str = malloc((4+strlen(user->username)+2)*sizeof(char)); 
+	char * root_str = malloc(2*sizeof(char)); 
+
+	sprintf(name_str, "\"%s\"", user->username);
+	sprintf(pass_str, "\"%s\"", user->password);
+	sprintf(home_str, "\"/fs/%s\"", user->username);
+	sprintf(root_str, "\"%d\"", (user->admin)?1:0);
+
+	set_insert_query_value(query, "username", name_str);
+	set_insert_query_value(query, "password", pass_str);
+	set_insert_query_value(query, "home", home_str);
+	set_insert_query_value(query, "is_admin", root_str);
+
+	ans = run_insert_sqlite_query(sql_connection, query);
+
+	/*if(!strcmp(ans, "END"))
+		return 1;*/
+	return 0;
+}

@@ -42,7 +42,7 @@ char** split_arguments(char * sentence){
 
 	int index=0, last_begin=0, count=0, last_was_char=no, quotation_open=no;
 	char ** result;
-	
+	printf("%s\n", sentence);
 
 	while(sentence[index] != '\0') {
 		if (sentence[index] == ' '){
@@ -81,6 +81,7 @@ char** split_arguments(char * sentence){
         		
         	result = add(aux_str, result, count);
     		
+			printf("%s\n", aux_str);
 		}
 	}
 	result= add("\0", result,count+1);
