@@ -153,5 +153,6 @@ int main (int argc, char **argv) {
 		command_read = no;
 		shell_index = 0;
 	}
+	//close resources: DB, MSQ, FIFO
 
 }

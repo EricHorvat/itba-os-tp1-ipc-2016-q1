@@ -31,6 +31,6 @@ typedef struct {
 
 typedef struct {
 	user_t *user;
-} command_register_user_t;
+} command_new_user_t;
 
 #endif

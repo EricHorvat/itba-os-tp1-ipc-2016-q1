@@ -34,6 +34,7 @@ static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** 
 static int cmd_close(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_commands(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 static int cmd_help(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
+static int cmd_new_user(connection_t *conn, client_command_info_t * info, char ** argv, int argc);
 
 static client_command_t **commands;
 
@@ -54,6 +55,7 @@ static void initialize_commands() {
 	commands[i++] = new_command("login","login username password","CAMlogin help", &cmd_login);
 	commands[i++] = new_command("logout","logout","CAMlogout help", &cmd_logout);
 	commands[i++] = new_command("commands","commands","CAMcommands help", &cmd_commands);
+	commands[i++] = new_command("newuser","newuser name yes/no [pass]","CAMnewuser help", &cmd_new_user);
 	commands[i] = NULL;
 }
 
@@ -453,9 +455,11 @@ static int cmd_login(connection_t *conn, client_command_info_t * info, char ** a
 
 static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
 
-	command_logout_t *cmd;
 	comm_error_t *err;
+	command_logout_t *cmd;
 	parse_result_t *presult;
+	err = NEW(comm_error_t);
+	cmd = NEW(command_logout_t);
 
 	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
 
@@ -501,6 +505,58 @@ static int cmd_logout(connection_t *conn, client_command_info_t * info, char ** 
 	return 0;
 }
 
+static int cmd_new_user(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
+
+	command_new_user_t *cmd;
+	comm_error_t *err;
+	parse_result_t *presult;
+	err = NEW(comm_error_t);
+	cmd = NEW(command_new_user_t);
+	cmd->user = NEW(user_t);
+
+	if(argc == 1 && show_help_for_command(argv[0],info)) return 0;
+
+	if (!isConnectionOpen(conn)) {
+
+		WARN("Please open connection first");
+		return 1;
+	}
+	
+	if(!logged){
+		WARN("You have to be logged");
+
+		return 1;
+	}
+
+	if(argc < 2 ||argc > 3){	
+		ERROR("Correct use: %s",info->correct_use);
+		return err->code = 10002;
+	}
+
+	send_cmd_new_user(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
+	return 0;
+}
+
 static int cmd_close(connection_t *conn, client_command_info_t * info, char ** argv, int argc){
 
 	command_close_t *cmd;
@@ -525,6 +581,7 @@ static int cmd_close(connection_t *conn, client_command_info_t * info, char ** a
 		return err->code = 10002;
 	}
 
+	err = NEW(comm_error_t);
 	
 	send_cmd_close(cmd, conn, err); //-> should set CONNECTION_STATE_CLOSED, close only one fifo and exit 
 

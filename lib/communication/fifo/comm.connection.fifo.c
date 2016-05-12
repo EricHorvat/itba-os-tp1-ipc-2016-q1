@@ -137,32 +137,22 @@ comm_error_code_t connection_open(connection_t *conn) {
 
 comm_error_code_t connection_close(connection_t *conn) {
 
-	char *request_fifo, *response_fifo;
-	size_t request_fifo_len, response_fifo_len;	
+	char *response_fifo;
+	size_t response_fifo_len;	
 
 	if (!conn)
 		return -1;
-
-	request_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->client_addr->host)+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
-	request_fifo = malloc(request_fifo_len+2);
-
+	
 	response_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->server_addr->host)+strlen(conn->client_addr->host)+strlen(FIFO_EXTENSION);
 	response_fifo = malloc(response_fifo_len+2);
-
-	request_fifo_len = sprintf(request_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->client_addr->host, conn->server_addr->host, FIFO_EXTENSION);
-	request_fifo[request_fifo_len] = '\0';
 
 	response_fifo_len = sprintf(response_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, conn->client_addr->host, FIFO_EXTENSION);
 	response_fifo[response_fifo_len] = '\0';
 
-	close(conn->res_fd);
 	close(conn->req_fd);
 
 	conn->res_fd = 0;
 	conn->req_fd = 0;
-
-	if (exists(request_fifo))
-		unlink(request_fifo);
 
 	if (exists(response_fifo))
 		unlink(response_fifo);

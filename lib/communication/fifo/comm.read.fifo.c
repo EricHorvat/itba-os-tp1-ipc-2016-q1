@@ -20,8 +20,6 @@
 #include <utils.h>
 #include <comm.fifo.h>
 
-#include <server_utils.h>
-
 typedef struct {
 	comm_callback_t cb;
 	comm_addr_t* origin;

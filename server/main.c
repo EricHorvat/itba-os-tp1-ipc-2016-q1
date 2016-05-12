@@ -15,7 +15,8 @@
 #include <sqlite.h>
 #include <file_utils.h>
 #include <mqueue.h>
-#include <server_utils.h>
+//#include <server_utils.h>
+#include <server_utilss.h>
 
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
@@ -92,10 +93,12 @@ static void* server_responder(void* data) {
 
 		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, NULL);
 		process_logout_cmd(req->connection, result->data.logout_cmd);
-	} else if ( strcmp(result->kind, "command.clsoe") == 0 ) {
+	} else if ( strcmp(result->kind, "command.close") == 0 ) {
 
 		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, NULL);
-		process_close_cmd(req->connection, result->data.login_cmd);
+		//WTF?
+		/*connection_close(conn);
+		printf("PLPL%s\n");*/
 	}
 	pthread_mutex_unlock(&lock);
 

@@ -104,12 +104,26 @@ const char* stringify_command_logout(command_logout_t *cmd) {
 	return json_object_to_json_string(json_object_object);
 }
 
-
 const char* stringify_command_close(command_close_t *cmd) {
 	json_object *json_object_object = json_object_new_object();
 	json_object *json_object_string_kind = json_object_new_string("command.close");
 	
 	json_object_object_add(json_object_object, "kind", json_object_string_kind);
+
+	return json_object_to_json_string(json_object_object);
+}
+
+const char* stringify_command_new_user(command_new_user_t *cmd) {
+	json_object *json_object_object = json_object_new_object();
+	json_object *json_object_string_kind = json_object_new_string("command.new_user");
+	json_object *json_object_string_name = json_object_new_string(cmd->user->username);
+	json_object *json_object_string_pass = json_object_new_string(cmd->user->password);
+	json_object *json_object_string_admin = json_object_new_int(cmd->user->admin);
+	
+	json_object_object_add(json_object_object, "kind", json_object_string_kind);
+	json_object_object_add(json_object_object, "username", json_object_string_name);
+	json_object_object_add(json_object_object, "password", json_object_string_pass);
+	json_object_object_add(json_object_object, "is_admin", json_object_string_admin);
 
 	return json_object_to_json_string(json_object_object);
 }
@@ -126,6 +140,7 @@ parse_result_t *parse_encoded(const char *json) {
 	command_login_t *login_cmd = NULL;
 	command_logout_t *logout_cmd = NULL;
 	command_close_t *close_cmd = NULL;
+	command_new_user_t *new_user_cmd = NULL;
 
 	parse_result_t *result = NEW(parse_result_t);
 
@@ -226,11 +241,32 @@ parse_result_t *parse_encoded(const char *json) {
 		
 		return result;
 		
-	}  else if (strcmp(kind, "command.close") == 0) {
+	} else if (strcmp(kind, "command.close") == 0) {
 
 		close_cmd = NEW(command_close_t);
 		
 		result->data.close_cmd = close_cmd;
+		
+		return result;
+		
+	} else if (strcmp(kind, "command.new_user") == 0) {
+
+		new_user_cmd = NEW(command_new_user_t);
+		
+		result->data.new_user_cmd = new_user_cmd;
+		
+		json_object_object_get_ex(main_object, "username", &aux_object);
+		str_value = json_object_get_string(aux_object);
+		new_user_cmd->user->username = (char*)malloc(strlen(str_value)+1);
+		strcpy(new_user_cmd->user->username, str_value);
+		
+		json_object_object_get_ex(main_object, "password", &aux_object);
+		str_value = json_object_get_string(aux_object);
+		new_user_cmd->user->password = (char*)malloc(strlen(str_value)+1);
+		strcpy(new_user_cmd->user->password, str_value);
+		
+		json_object_object_get_ex(main_object, "is_admin", &aux_object);
+		new_user_cmd->user->admin = json_object_get_int(aux_object);
 		
 		return result;
 		
@@ -331,6 +367,11 @@ void send_cmd_logout(command_logout_t *cmd, connection_t *conn, comm_error_t *er
 
 void send_cmd_close(command_close_t *cmd, connection_t *conn, comm_error_t *error) {
 	const char* serialized = stringify_command_close(cmd);
+	comm_send_data((void*)serialized, strlen(serialized), conn, error);
+}
+
+void send_cmd_new_user(command_new_user_t *cmd, connection_t *conn, comm_error_t *error) {
+	const char* serialized = stringify_command_new_user(cmd);
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
