@@ -20,6 +20,8 @@
 #include <utils.h>
 #include <comm.fifo.h>
 
+#include <server_utils.h>
+
 typedef struct {
 	comm_callback_t cb;
 	comm_addr_t* origin;
@@ -76,11 +78,10 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	comm_addr_t *client_aux;
 
-	info("will open connection file");
-
 	if ( (fd = open(conn->connection_file, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
 		// fill error;
+		ERROR("cant open %s", conn->connection_file);
 		return;
 	}
 
@@ -93,8 +94,6 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	} while (*(buffer+read_bytes++) != '\0');
 	// wait for close on the other end
 
-	info("read from conenction file");
-
 	close(fd);
 
 	// hay que escribir el url fd://anon9137
@@ -103,6 +102,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	if (address_from_url(buffer, client_aux)) {
 		fprintf(stderr, ANSI_COLOR_RED"%s:%d %s is an invalid address\n"ANSI_COLOR_RESET, __FILE__, __LINE__, buffer);
+		ERROR("%s is an invalid address",buffer);
 		return;
 	}
 
@@ -116,10 +116,9 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	if ( mkfifo(request_fifo, FIFO_PERMS) < 0 ) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%d: %s fifo failed creation err:%d msg:%s\n"ANSI_COLOR_RESET, __LINE__, request_fifo, errno, strerror(errno));
+		ERROR("%s fifo failed creation err:%d msg:%s", request_fifo, errno, strerror(errno));
 		return;
 	}
-
-	info("request mkfifo built ok");
 
 	// armo $SRV.$CLI.fifo
 	response_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(client_aux->host)+1+strlen(conn->server_addr->host)+strlen(FIFO_EXTENSION);
@@ -127,18 +126,13 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	response_fifo_len = sprintf(response_fifo, "%s%s.%s%s", FIFO_PATH_PREFIX, conn->server_addr->host, client_aux->host, FIFO_EXTENSION);
 	response_fifo[response_fifo_len] = '\0';
 
-
-	info("writing response fifo");
-
 	if ( (fd = open(response_fifo, O_WRONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: %s open failed err: %d msg: %s\n"ANSI_COLOR_RESET, __LINE__, response_fifo, errno, strerror(errno));
 		abort();
 		// rellenar el error
-
+		ERROR("%s open failed err: %d msg: %s", response_fifo, errno, strerror(errno));
 		return; 
 	}
-
-	info("opened response fifo");
 
 	write_one_by_one(fd, buffer, read_bytes+1);
 
@@ -147,39 +141,29 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	conn->req_fd = fd;
 
-	info("opening request fifo");
-
 	if ( (fd = open(request_fifo, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
+		ERROR("open failed %s",conn->connection_file);
 		// fill error;
 		return;
 	}
-
-	info("opened request_fifo");
 
 	memset(buffer, '\0', 2048);
 
 	r_bytes = read_bytes;
 	read_bytes = 0;
 
-
-	info("bout to read");
 	// read one by one
 	do {
 		read(fd, buffer+read_bytes, 1);
 	} while ( read_bytes < r_bytes && *(buffer+read_bytes++) != '\0');
 
-	info("read ok");
-
 	if ( strcmp(buffer, backup) != 0) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%d: Authentication failed got %s\n"ANSI_COLOR_RESET, __LINE__, buffer);
+		ERROR("Authentication failed got %s",buffer);
 		return;
-
 	}
-
-	info("auth ok");
-
 
 	conn->client_addr = NEW(comm_addr_t);
 
@@ -187,8 +171,6 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	free(buffer);
 	free(backup);
-
-	printf(ANSI_COLOR_GREEN"soy el #1\n"ANSI_COLOR_RESET);
 
 	conn->res_fd = fd;
 	conn->state = CONNECTION_STATE_OPEN;

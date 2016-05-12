@@ -18,11 +18,12 @@ int main(int argc, char const *argv[])
 	int end_service = 0;
 	char buff[MSG_MAX_SIZE+1];
 
-	FILE* log_file = fopen("./server.log", "w+t");
 
 	mq=create_mq();
-    printf("Logging service launched successfully\n");
-
+    printf("Logging service launched successfully \n");
+	
+	FILE* log_file = fopen("./server.log", "wt");
+	fclose(log_file);
 
 	while(!end_service){
 		read_mq(mq, buff);
@@ -33,15 +34,15 @@ int main(int argc, char const *argv[])
         }
         else
         {
-        	printf("%s\n", buff);
+			log_file = fopen("./server.log", "a+t");
         	fputs(buff,log_file);
+			fclose(log_file);
         }
 
 	}
 
 	close_mq(mq);
 
-	fclose(log_file);
 	return 0;
 }
 

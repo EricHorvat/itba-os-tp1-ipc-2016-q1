@@ -15,6 +15,7 @@
 #include <sqlite.h>
 #include <file_utils.h>
 #include <mqueue.h>
+#include <server_utils.h>
 
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
@@ -42,6 +43,7 @@ static void* server_responder(void* data) {
 	pthread_t self_;
 	int pid = (int)getpid();
 	long int self;
+	char * log_str = NEW_LOG_STR();
 
 	err = NEW(comm_error_t);
 	self_ = pthread_self();
@@ -51,62 +53,53 @@ static void* server_responder(void* data) {
 	
 	result = parse_encoded((const char*)req->input);
 
-	INFO("worker %d::thread %ld::client sent: [%s]\n", pid, self, result->kind);
+	S_INFO(log_str,"worker %d::thread %ld::client sent: [%s]", pid, self, result->kind);
 
 	pthread_mutex_lock(&lock);
 	if (strcmp(result->kind, "int") == 0) {
 
-		INFO("worker %d::thread %ld::client says: %d\n", pid, self, result->data.i);
+		S_INFO(log_str,"worker %d::thread %ld::client says: %d", pid, self, result->data.i);
 		send_int((result->data.i)*2, req->connection, err);
-		INFO("worker %d::thread %ld::client i say: %d\n", pid, self, (result->data.i)*2);
+		S_INFO(log_str,"worker %d::thread %ld::client i say: %d", pid, self, (result->data.i)*2);
 
 	} else if ( strcmp(result->kind, "double") == 0) {
 
-		INFO("worker %d::thread %ld::client says: %f\n", pid, self, result->data.d);
+		S_INFO(log_str,"worker %d::thread %ld::client says: %f", pid, self, result->data.d);
 		send_double((result->data.d)*2, req->connection, err);
-		INFO("worker %d::thread %ld::client i say: %f\n", pid, self, (result->data.d)*2);
+		S_INFO(log_str,"worker %d::thread %ld::client i say: %f", pid, self, (result->data.d)*2);
 
 	} else if ( strcmp(result->kind, "string") == 0 ) {
 
-		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.str);
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.str);
 		send_string(result->data.str+2, req->connection, err);
 
 	} else if ( strcmp(result->kind, "command.get") == 0 ) {
 
-		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.get_cmd->path);
-
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.get_cmd->path);
 		process_get_cmd(req->connection, result->data.get_cmd);
-
 		
-	}else if ( strcmp(result->kind, "command.post") == 0 ) {
+	} else if ( strcmp(result->kind, "command.post") == 0 ) {
 
-		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.get_cmd->path);
-
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.get_cmd->path);
 		process_post_cmd(req->connection, result->data.post_cmd);
-
 		
-	}else if ( strcmp(result->kind, "command.login") == 0 ) {
+	} else if ( strcmp(result->kind, "command.login") == 0 ) {
 
-		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.login_cmd->user->username);
-
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.login_cmd->user->username);
 		process_login_cmd(req->connection, result->data.login_cmd);
-
 		
-	}else if ( strcmp(result->kind, "command.logout") == 0 ) {
+	} else if ( strcmp(result->kind, "command.logout") == 0 ) {
 
-		INFO("worker %d::thread %ld::client says: %s\n", pid, self, result->data.login_cmd->user->username);
-
+		S_INFO(log_str,"worker %d::thread %ld::client says: %s", pid, self, result->data.login_cmd->user->username);
 		process_logout_cmd(req->connection, result->data.login_cmd);
-
-		
 	}
 	pthread_mutex_unlock(&lock);
 
 
 	if (err->code) {
-		ERROR("worker %d::thread %ld::error: %d\tmsg:%s\n", pid, self, err->code, err->msg);
+		S_ERROR(log_str,"worker %d::thread %ld::error: %d\tmsg:%s", pid, self, err->code, err->msg);
 	} else {
-		SUCCESS("worker %d::thread %ld::data sent successfully: (%s)\n", pid, self, err->msg);
+		S_INFO(log_str,"worker %d::thread %ld::data sent successfully: (%s)", pid, self, err->msg);
 	}
 
 	return nil;
@@ -125,6 +118,8 @@ static void listen_connections(server_config_t *config) {
 	int pthread_ret;
 	client_request_t *request;
 
+	char * log_str = NEW_LOG_STR();
+
 	sql_connection = NEW(sql_connection_t);
 	
 	open_sql_conn(sql_connection);
@@ -135,45 +130,45 @@ static void listen_connections(server_config_t *config) {
 	threads = (pthread_t**)malloc(MIN_THREADS*sizeof(pthread_t*));
 
 	if (address_from_url("socket://google:3000", connection->server_addr) != 0) {
-		ERROR("Invalid Address");
+		S_ERROR(log_str,"Invalid Address");
 		abort();
 	}
 
-	SUCCESS("master::listening on name: %s", connection->server_addr->host);
+	S_INFO(log_str,"master::listening on name: %s", connection->server_addr->host);
 
 	comm_listen(connection, nil);
 
 	while (1) {
-		WARN("master::waiting for connections");
+		S_WARN(log_str,"master::waiting for connections");
 		comm_accept(connection, nil);
 
 		if (!connection) {
-			ERROR("connection is null");
+			S_ERROR(log_str,"connection is null");
 			break;
 		}
-		SUCCESS("master::opened connection for %s", connection->client_addr->host);
+		S_INFO(log_str,"master::opened connection for %s", connection->client_addr->host);
 
 		childPID = fork();
 
 		if (childPID > 0) {
 			// parent
-			SUCCESS("worker %d::created for %s", childPID, connection->client_addr->host);
+			S_INFO(log_str, "worker %d::created for %s", childPID, connection->client_addr->host);
 		} else {
 			if (childPID == -1) {
-				ERROR("Could not fork");
+				S_ERROR(log_str,"Could not fork");
 				abort();
 			}
 
 			if (pthread_mutex_init(&lock, NULL) != 0) {
-					ERROR("mutex init failed");
+					S_ERROR(log_str,"mutex init failed");
 					exit(3);
 			}
 
 			while (1) {
 				// si no manda nada cuelga aca
-				WARN("worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
+				S_WARN(log_str,"worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
 				command = comm_receive_data(connection, nil);
-				INFO("worker %d::%s says %s", getpid(), connection->client_addr->host, command);
+				S_INFO(log_str,"worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 
 				threads[current_thread] = NEW(pthread_t);
@@ -187,24 +182,15 @@ static void listen_connections(server_config_t *config) {
 				
 
 				if ( (pthread_ret = pthread_create(threads[current_thread], NULL, server_responder, request)) ) {
-					ERROR("worker %d::pthread create returned %d", getpid(), pthread_ret);
+					S_ERROR(log_str,"worker %d::pthread create returned %d", getpid(), pthread_ret);
 				}
 
 				current_thread++;
 
-
 				free(command);
 			}
-
 			
-
-			// process data
-			// report to msq
-			// ask SQL
-			// respond
-			// 
-			
-			INFO("worker %d::ending", getpid());
+			S_INFO(log_str,"worker %d::ending", getpid());
 
 			exit(0);
 		}
@@ -212,13 +198,11 @@ static void listen_connections(server_config_t *config) {
 
 }
 
-mqd_t open_mq();
-
-#define MSQUEUE_NAME "/queue_com"
-
 int main(int argc, char **argv) {
 	
 	
+	init_mq();
+
 	server_config_t *config;
 	char *config_file_opt;
 
@@ -233,30 +217,7 @@ int main(int argc, char **argv) {
 
 	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
 
-
-	mqd_t mq;
-	char *buff = "hola";
-
-	mq = open_mq();
-
-	if (mq_send(mq, strdup(buff), 4, 0) != 0) {
-		ERROR("msg q");
-	}
-	
-	mq_close(mq);
-
-
 	listen_connections(config);
 
 	return 0;
-}
-
-mqd_t open_mq(){
-    mqd_t mq;
-    if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY))<0)
-    {
-    	//AGREGAR EXECV
-		printf("%d\n",errno);
-		exit(-1);
-	}
 }

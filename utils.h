@@ -1,6 +1,8 @@
 #ifndef __UTILS_H_
 #define __UTILS_H_
 
+#include <server_utils.h>
+
 typedef unsigned char bool;
 typedef unsigned char boolean;
 
@@ -68,6 +70,10 @@ typedef char* string;
 #define SUCCESS(msg, ...) printf(ANSI_COLOR_GREEN msg ANSI_COLOR_RESET "\n", ##__VA_ARGS__)
 
 #endif
+
+#define S_INFO(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_info(str)
+#define S_ERROR(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_error(str)
+#define S_WARN(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_warning(str)
 
 int getrnd(int, int);
 char *gen_boundary();
