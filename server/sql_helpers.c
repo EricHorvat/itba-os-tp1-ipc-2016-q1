@@ -121,7 +121,7 @@ int new_user_in_db(user_t * user){
 	sprintf(name_str, "\"%s\"", user->username);
 	sprintf(pass_str, "\"%s\"", user->password);
 	sprintf(home_str, "\"/fs/%s\"", user->username);
-	sprintf(root_str, "\"%d\"", (user->admin)?1:0);
+	sprintf(root_str, "\"%d\"", (user->admin>0)?1:0);
 
 	set_insert_query_value(query, "username", name_str);
 	set_insert_query_value(query, "password", pass_str);

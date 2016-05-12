@@ -143,12 +143,12 @@ void process_new_user_cmd(connection_t * conn, command_new_user_t *new_user){
 		send_data("HAVE NOT PERMISION", 10, conn, err);
 		return;
 	}
-	printf("%s\n",new_user->user->username);
 	create_user_folder(new_user->user->username);
-	new_user_in_db(new_user->user->username);
+	new_user_in_db(new_user->user);
 	printf("ddd%s\n",new_user->user->username);
 	//insert in db
-	//returnok
+	send_data("User registered",15, conn, err);
+	return;
 }
 
 bool check_user_logged(fs_user_t * user, connection_t * conn, comm_error_t * err){
@@ -163,7 +163,6 @@ bool check_user_logged(fs_user_t * user, connection_t * conn, comm_error_t * err
 
 void create_user_folder(char * username){
 	int child_pid = 0;
-	printf("%s\n", username);
 	if((child_pid = fork())==0){
 		char ** args, ** envp;
 		char * cmd, * path;
@@ -176,7 +175,6 @@ void create_user_folder(char * username){
 		args[0]=cmd;
 		args[1]=path;
 		args[2]=NULL;
-		printf("a %s\n", username);
 		execve(strdup(cmd),args,envp);
 	}else if( child_pid < 0){
 		ERROR("CANT FORK");
