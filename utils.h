@@ -72,9 +72,9 @@ typedef char* string;
 
 #endif
 
-#define S_INFO(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_info(str)
-#define S_ERROR(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_error(str)
-#define S_WARN(str, msg,...) sprintf(str,msg, ##__VA_ARGS__); log_warning(str)
+#define S_INFO(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_info(str)
+#define S_ERROR(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_error(str)
+#define S_WARN(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_warning(str)
 
 int getrnd(int, int);
 char *gen_boundary();

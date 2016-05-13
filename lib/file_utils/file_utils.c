@@ -70,7 +70,8 @@ char * raw_data_from_file(char * path, int *length){
 
 	contents[size] = 0;
 
-	*length = size; 
+	if (length)
+		*length = size; 
 
 	return contents;
 }

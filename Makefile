@@ -2,12 +2,12 @@ GCC=gcc
 CFLAGS=-I./ -I./server -I./client -I./logging/headers -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
 CFLAGS+=-Wall
 GCCFLAGS=-pthread
-MATHFLAGS=-lm -lrt
+MATHFLAGS=-lm
 
 GCCMACROS=-D__DEBUG__
 
 IMPORT_CFLAGS=$(shell pkg-config --cflags json-c)
-IMPORT_LDFLAGS=$(shell pkg-config --libs json-c) $(shell pkg-config --libs yaml-0.1) $(shell pkg-config --libs sqlite3)
+IMPORT_LDFLAGS=$(shell pkg-config --libs json-c) $(shell pkg-config --libs sqlite3)
 
 
 LIBRARY_SOURCES=$(wildcard lib/serialization/*.c) $(wildcard lib/sqlite/*.c) $(wildcard lib/file_utils/*.c)
@@ -60,7 +60,7 @@ ROOT_OBJECTS=$(ROOT_SOURCES:.c=.o)
 
 
 
-all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID) $(LOGGING_ID) 
+all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID)
 
 $(CLIENT_ID): $(LIB_ID) $(CLIENT_OBJECTS) $(ROOT_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(CLIENT_OUTPUT) $(ROOT_OBJECTS) $(CLIENT_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS) $(MATHFLAGS)

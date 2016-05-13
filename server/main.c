@@ -14,9 +14,10 @@
 #include <serialization.h>
 #include <sqlite.h>
 #include <file_utils.h>
-#include <mqueue.h>
+#include <math.h>
+// #include <mqueue.h>
 //#include <server_utils.h>
-#include <server_utilss.h>
+// #include <server_utilss.h>
 
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
@@ -41,16 +42,15 @@ static void* server_responder(void* data) {
 	client_request_t *req;
 	comm_error_t *err;
 	parse_result_t *result;
-	pthread_t self_;
-	int pid = (int)getpid();
+	int pid;
 	long int self;
-	char * log_str = NEW_LOG_STR();
+	char * log_str;
 
+	log_str = (char*)malloc(MAX_LOG_LENGHT);
+	pid = (int)getpid();
 	err = NEW(comm_error_t);
-	self_ = pthread_self();
+	self = (long int)pthread_self();
 	req = (client_request_t*)data;
-
-	self = (long int)self_;
 	
 	result = parse_encoded((const char*)req->input);
 
@@ -130,7 +130,13 @@ static void listen_connections(server_config_t *config) {
 	int pthread_ret;
 	client_request_t *request;
 
-	char * log_str = NEW_LOG_STR();
+	char *addr;
+	size_t addr_len = 0;
+	char * log_str;
+
+	size_t num_threads = MIN_THREADS
+
+	log_str = (char*)malloc(MAX_LOG_LENGHT);
 
 	sql_connection = NEW(sql_connection_t);
 	
@@ -138,13 +144,25 @@ static void listen_connections(server_config_t *config) {
 	
 	connection = NEW(connection_t);
 	connection->server_addr = NEW(comm_addr_t);
-	
-	threads = (pthread_t**)malloc(MIN_THREADS*sizeof(pthread_t*));
 
-	if (address_from_url("socket://google:3000", connection->server_addr) != 0) {
+#ifdef __FIFO__
+	addr = malloc( (addr_len = 7 + strlen(config->server_name) +1) );
+	memset(addr, ZERO, addr_len);
+	sprintf(addr, "fifo://%s", config->server_name);
+	if (address_from_url(addr, connection->server_addr) != 0) {
 		S_ERROR(log_str,"Invalid Address");
 		abort();
 	}
+#else
+	addr = malloc( (addr_len = 7 + strlen(config->server_name) + floorf(log10(config->port)) + 1 + 1) );
+	memset(addr, ZERO, addr_len);
+	sprintf(addr, "fifo://%s:%d", config->server_name, config->port);
+	if (address_from_url(addr, connection->server_addr) != 0) {
+		S_ERROR(log_str,"Invalid Address");
+		abort();
+	}
+#endif
+	threads = (pthread_t**)malloc(num_threads*sizeof(pthread_t*));
 
 	S_INFO(log_str,"master::listening on name: %s", connection->server_addr->host);
 
@@ -183,6 +201,13 @@ static void listen_connections(server_config_t *config) {
 				S_INFO(log_str,"worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 
+				if (current_thread == num_threads-1) {
+					num_threads *= 2;
+					threads = realloc(threads, num_threads*sizeof(pthread_t*));
+				}
+
+
+
 				threads[current_thread] = NEW(pthread_t);
 
 				request = NEW(client_request_t);
@@ -213,7 +238,7 @@ static void listen_connections(server_config_t *config) {
 int main(int argc, char **argv) {
 	
 	
-	init_mq();
+	// init_mq();
 
 	server_config_t *config;
 	char *config_file_opt;
@@ -222,12 +247,23 @@ int main(int argc, char **argv) {
 	
 	config_file_opt = process_arguments(argc, argv);
 
-	if (config_file_opt)
-		load_configuration(config_file_opt, config);
-	else
-		load_configuration(DEFAULT_CONFIG_FILE, config);
+	if (config_file_opt) {
+		if (load_configuration(config_file_opt, config)) {
+			ERROR("Configuration file %s could not be opened", config_file_opt);
+			abort();
+		}
+	} else {
+		if (load_configuration(DEFAULT_CONFIG_FILE, config)) {
+			ERROR("Configuration could not be opened");
+			abort();
+		}
+	}
 
-	printf("connection~>%s\tport~>%d\n", config->connection_queue, config->port);
+	SUCCESS("Server started successfully with the following configuration:");
+	LOG("Server Name:\t%s\n", config->server_name);
+#ifdef __SOCKET__
+	printf("Port:\t%d\n", config->port);
+#endif
 
 	listen_connections(config);
 

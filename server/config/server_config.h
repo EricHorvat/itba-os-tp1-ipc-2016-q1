@@ -1,13 +1,10 @@
 #ifndef __SERVER_CONFIG_H__
 #define __SERVER_CONFIG_H__
 
-#define DEFAULT_CONFIG_FILE "server/config/config.yaml"
-#define READ_PERMS "r"
-
-#define INCOMING_CONNECTIONS_FIFO "/tmp/google.in.fifo"
+#define DEFAULT_CONFIG_FILE "server/config/config.json"
 
 typedef struct {
-	char *connection_queue;
+	char *server_name;
 	unsigned int port;
 } server_config_t;
 
