@@ -13,11 +13,6 @@
 
 #include <file_utils.h>
 
-#define INVALID_ADDRESS 2
-#define SERVER_OFFLINE 3
-#define SERVER_BUSY 4
-
-
 comm_error_code_t connection_open(connection_t *conn) {
 
 	size_t conn_file_len = 0, request_fifo_len, response_fifo_len;
@@ -27,12 +22,12 @@ comm_error_code_t connection_open(connection_t *conn) {
 	size_t read_bytes = 0, url_len;
 
 	if (!conn)
-		return -1;
+		return ERR_NULL_CONNECTION;
 
 	conn->state = CONNECTION_STATE_CLOSED;
 
 	if (!conn->client_addr->valid || !conn->server_addr->valid ) {
-		return INVALID_ADDRESS;
+		return ERR_INVALID_ADDRESS;
 	}
 
 	url_len = strlen(conn->client_addr->url);
@@ -48,7 +43,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	if ( mkfifo(response_fifo, FIFO_PERMS) < 0 ) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%s fifo failed creation err:%d msg:%s\n"ANSI_COLOR_RESET, response_fifo, errno, strerror(errno));
-		return 6;
+		return ERR_FIFO_FAIL_CONNECTION;
 	}
 
 	INFO("successfully created response fifo");
@@ -67,11 +62,11 @@ comm_error_code_t connection_open(connection_t *conn) {
 
 	// me fijo si existe
 	if (!exists(conn->connection_file)) {
-		return SERVER_OFFLINE;
+		return ERR_SERVER_OFFLINE;
 	}
 
 	if ( (fd = open(conn->connection_file, O_WRONLY)) < 0) {
-		return SERVER_BUSY;
+		return ERR_SERVER_BUSY;
 	}
 
 	write_one_by_one(fd, (void*)conn->client_addr->url, url_len );
@@ -85,7 +80,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	if ( (fd = open(response_fifo, O_RDONLY)) < 0 ) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%s open failed err:%d msg:%s\n"ANSI_COLOR_RESET, response_fifo, errno, strerror(errno));
-		return 7;
+		return ERR_FIFO_CANT_OPEN_RESPONSE;
 	}
 
 	INFO("openened response fifo");
@@ -105,7 +100,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	// comparamos para evitar corrupcion de datos
 	if (strcmp(buffer, conn->client_addr->url) != 0) {
 		fprintf(stderr, ANSI_COLOR_RED"Authentication failed got %s\n"ANSI_COLOR_RESET, buffer);
-		return 9;
+		return ERR_CORRUPT_DATA;
 	}
 
 	INFO("Authentication succeeded");
@@ -113,7 +108,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	// mandamos nuestro ok
 	if ( (fd = open(request_fifo, O_WRONLY)) < 0) {
 		fprintf(stderr, ANSI_COLOR_RED"%s open failed err:%d msg:%s\n"ANSI_COLOR_RESET, request_fifo, errno, strerror(errno));
-		return 10;
+		return ERR_FIFO_CANT_OPEN_REQUEST;
 	}
 
 	INFO("opened reqeust fifo");
@@ -131,7 +126,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	conn->state = CONNECTION_STATE_OPEN;
 	conn->sense = COMMUNICATION_CLIENT_SERVER;
 
-	return 0;
+	return CONNECTION_OK;
 
 }
 
@@ -141,7 +136,7 @@ comm_error_code_t connection_close(connection_t *conn) {
 	size_t response_fifo_len;	
 
 	if (!conn)
-		return -1;
+		return ERR_NULL_CONNECTION;
 	
 	response_fifo_len = strlen(FIFO_PATH_PREFIX)+strlen(conn->server_addr->host)+strlen(conn->client_addr->host)+strlen(FIFO_EXTENSION);
 	response_fifo = malloc(response_fifo_len+2);
@@ -159,6 +154,6 @@ comm_error_code_t connection_close(connection_t *conn) {
 
 	conn->state = CONNECTION_STATE_CLOSED;
 
-	return 0;
+	return CONNECTION_OK;
 
 }

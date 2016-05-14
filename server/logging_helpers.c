@@ -57,7 +57,6 @@ void log_mq(char* kind, char* str) {
 
 	msg_f = (char*)malloc(strlen(kind) + 2 + strlen(str) + 2);
 	sprintf(msg_f, "%s: %s\n", kind, str);
-	printf("%s\n", msg_f);
 	if ( mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0 ) {
 		ERROR("msq failed with error %d\tmsg:%s", errno, strerror(errno));
 	}

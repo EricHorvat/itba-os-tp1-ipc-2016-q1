@@ -30,4 +30,21 @@ typedef struct {
 comm_error_code_t connection_open(connection_t* conn);
 comm_error_code_t connection_close(connection_t* conn);
 
+#define CONNECTION_OK 0
+
+#define ERR_NULL_CONNECTION 200
+#define ERR_CORRUPT_DATA 201
+#define ERR_INVALID_ADDRESS 202
+#define ERR_SERVER_OFFLINE 203
+#define ERR_SERVER_BUSY 204
+#define ERR_ 206
+
+#define ERR_FIFO_FAIL_CONNECTION 300
+#define ERR_FIFO_CANT_OPEN_RESPONSE 301
+#define ERR_FIFO_CANT_OPEN_REQUEST 302
+
+#define ERR_SOCKET_NOT_CREATED 400
+#define ERR_NO_SUCH_HOST 401
+#define ERR_SOCKET_NOT_CONNECTED 402
+
 #endif

@@ -105,7 +105,7 @@ int cmd_parse(connection_t* conn, char* cmd) {
 		j++;
 	}
 	printf(ANSI_COLOR_YELLOW "[%s] Command not found\n" ANSI_COLOR_RESET, comms[0]);
-	return 1;
+	return ERR_COMMAND_NOT_FOUND;
 }
 
 static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -121,12 +121,12 @@ static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv
 
 		WARN("Opened connection");
 
-		return 1;
+		return ERR_ALREADY_DONE;
 	}
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return 1;
+		return ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	if (address_from_url(argv[0], conn->server_addr)) {
@@ -135,10 +135,10 @@ static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv
 
 	if ((conn_error = connection_open(conn) != 0)) {
 		fprintf(stderr, ANSI_COLOR_RED "error %d creating connection\n" ANSI_COLOR_RESET, conn_error);
-		return conn_error;
+		return conn_error;//CHANGE IN CONNECTION OPEN
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_sendi(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -147,18 +147,18 @@ static int cmd_sendi(connection_t* conn, client_command_info_t* info, char** arg
 	parse_result_t* presult;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return 1;
+		return ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
@@ -189,7 +189,7 @@ static int cmd_sendi(connection_t* conn, client_command_info_t* info, char** arg
 		SUCCESS("response: %d", presult->data.i);
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_sends(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -198,18 +198,18 @@ static int cmd_sends(connection_t* conn, client_command_info_t* info, char** arg
 	parse_result_t* presult;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return 1;
+		return ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
@@ -240,7 +240,7 @@ static int cmd_sends(connection_t* conn, client_command_info_t* info, char** arg
 		SUCCESS("response: %s", presult->data.str);
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_sendd(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -249,13 +249,13 @@ static int cmd_sendd(connection_t* conn, client_command_info_t* info, char** arg
 	parse_result_t* presult;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	err = NEW(comm_error_t);
@@ -280,7 +280,7 @@ static int cmd_sendd(connection_t* conn, client_command_info_t* info, char** arg
 		SUCCESS("response: %f", presult->data.d);
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -290,19 +290,19 @@ static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv,
 	parse_result_t* presult;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("Please login first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	cmd = NEW(command_get_t);
@@ -337,7 +337,7 @@ static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv,
 	if (strcmp(presult->kind, "data") == 0) {
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -348,19 +348,19 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	char * aux;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("Please login first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	cmd = NEW(command_post_t);
@@ -370,7 +370,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	if (argc != 2) {
 
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10001;
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	cmd->dest = argv[0];
@@ -380,7 +380,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 		if(errno = ERR_FILE_NOT_OPENED){
 			ERROR("Cant open file");
 		}
-		return err->code =10001;
+		return err->code = errno;
 	}
 	cmd->data = encode_raw_data(aux, cmd->size);
 
@@ -406,7 +406,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_login(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -416,13 +416,13 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 	parse_result_t*  presult;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
 
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	cmd       = NEW(command_login_t);
@@ -432,7 +432,12 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 
 	if (argc != 2) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10001;
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
+	}
+
+	if (logged) {
+		WARN("You are already logged");
+		return ERR_ALREADY_DONE;
 	}
 
 	cmd->user->username = strdup(argv[0]);
@@ -460,7 +465,7 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
 	logged = yes;
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_logout(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -471,18 +476,18 @@ static int cmd_logout(connection_t* conn, client_command_info_t* info, char** ar
 	err = NEW(comm_error_t);
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("You have to be logged to logout");
 
-		return 1;
+		return ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	if (argc != 0) {
@@ -512,7 +517,7 @@ static int cmd_logout(connection_t* conn, client_command_info_t* info, char** ar
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
 	logged = no;
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -525,22 +530,22 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 	cmd->user = NEW(user_t);
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("You have to be logged");
-		return 1;
+		return ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	if (argc < 2 || argc > 3) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10002;
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	cmd->user->username = strdup(argv[0]);
@@ -550,7 +555,7 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 		cmd->user->admin = yes;
 	} else {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10002;
+		return err->code = ERR_MISUSE_ARGUMENT;
 	}
 
 	if (argc == 2) {
@@ -580,7 +585,7 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 	if (strcmp(presult->kind, "data") == 0) {
 		SUCCESS("response: %s", (char*)presult->data.data);
 	}
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_close(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -590,22 +595,22 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 	err = NEW(comm_error_t);
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return 1;
+		return ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (logged) {
 		WARN("You have not to be logged to close");
-		return 1;
+		return ERR_ALREADY_DONE;
 	}
 
 	if (argc != 0) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10002;
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
@@ -619,7 +624,7 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 		return err->code;
 	}
 
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_commands(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -627,13 +632,13 @@ static int cmd_commands(connection_t* conn, client_command_info_t* info, char** 
 	int i = 0;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 	while (commands[i] != NULL) {
 
 		printf("%s\n", commands[i]->name);
 		i++;
 	}
-	return 0;
+	return COMMAND_OK;
 }
 
 static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -644,11 +649,11 @@ static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv
 	err = NEW(comm_error_t);
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10002;
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	while (commands[i] != NULL) {
@@ -657,7 +662,7 @@ static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv
 		}
 		i++;
 	}
-	return 0;
+	return COMMAND_OK;
 }
 
 bool isConnectionOpen(connection_t* conn) {

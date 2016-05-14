@@ -18,10 +18,6 @@
 
 #include <utils.h>
 
-#define INVALID_ADDRESS 2
-#define SERVER_OFFLINE 3
-#define SERVER_BUSY 4
-
 comm_error_code_t connection_open(connection_t *conn) {
 
 	int fd;
@@ -31,13 +27,13 @@ comm_error_code_t connection_open(connection_t *conn) {
 	
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		ERROR("cant create socket");
-		return 1;
+		return ERR_SOCKET_NOT_CREATED;
 	} 
 	
 	server = gethostbyname(/**OJOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO*/"127.0.0.1");
 	if (server == NULL) {
 		ERROR("no such host");
-		return 3;
+		return ERR_NO_SUCH_HOST;
 	}
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
@@ -48,7 +44,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 
 	if (connect(fd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)  {
 		ERROR("cant connect to socket");
-		return 2;
+		return ERR_SOCKET_NOT_CONNECTED;
 	}
 
 	int url_len = strlen(conn->client_addr->url);
@@ -63,7 +59,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 	conn->state = CONNECTION_STATE_OPEN;
 	conn->sense = COMMUNICATION_CLIENT_SERVER;
 
-	return 0;
+	return CONNECTION_OK;
 
 }
 
@@ -72,6 +68,6 @@ comm_error_code_t connection_close(connection_t *conn) {
 	
 	conn->state = CONNECTION_STATE_CLOSED;
 
-	return 0;
+	return CONNECTION_OK;
 
 }
