@@ -21,19 +21,19 @@ static int  tried_to_start_server = 0;
 void log_mq(char* kind, char* str);
 
 void init_mq(void) {
-
+	init_logging_server();		
 	if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY)) < 0) {
-		//SERVER DE LOGGING APAGADO
+		/*//SERVER DE LOGGING APAGADO
 		INFO("logging server is shutdown. booting");
 		if (!tried_to_start_server) {
-			init_logging_server();
 			tried_to_start_server++;
 			init_mq();
-		} else {
+		} else {*/
 			printf("%d\n", errno);
 			exit(-1);
-		}
+		//}
 	}
+	printf("%d\n", mq);
 }
 
 void log_error(char* str) {
@@ -77,9 +77,7 @@ static void init_logging_server(void) {
 		args[1] = NULL;
 		execve(LOGGING_BINARY_DIR, args, envp);
 
-	} else if (child_pid > 0) {
-		waitpid(child_pid, NULL, 0);
-	} else {
+	} else if (child_pid < 0) {
 		ERROR("CANT FORK\n");
 	}
 	

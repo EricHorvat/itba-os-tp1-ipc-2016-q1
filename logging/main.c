@@ -62,7 +62,6 @@ mqd_t create_mq(void) {
 	attr.mq_maxmsg  = MAX_MSG;
 	attr.mq_msgsize = MSG_MAX_SIZE;
 	attr.mq_curmsgs = 0;
-
 	if ((mq = mq_open(MSQUEUE_NAME, O_CREAT | O_RDONLY, 0644, &attr)) == -1) {
 		printf("%d\n", errno);
 		exit(-1);

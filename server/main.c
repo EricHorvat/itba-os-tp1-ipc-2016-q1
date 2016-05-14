@@ -253,6 +253,7 @@ int main(int argc, char** argv) {
 
 #ifdef __LOGGING__
 	init_mq();
+	printf("a\n");
 #endif
 
 	config_file_opt = process_arguments(argc, argv);
