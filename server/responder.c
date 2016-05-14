@@ -8,6 +8,8 @@
 #include <helpers/sql_helpers.h>
 #include <sqlite.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 fs_user_t* user = NULL;
 
@@ -45,7 +47,7 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd) {
 
 	contents = raw_data_from_file(p, &size);
 
-	LOG("contents: %s", contents);
+	LOG("contents: %s", (char*)contents);
 
 	err->msg  = "OK";
 	err->code = 0;
@@ -63,14 +65,15 @@ void process_post_cmd(connection_t* conn, command_post_t* post) {
 
 	comm_error_t* err;
 	size_t        path_length;
+	char* path;
+
 	err = NEW(comm_error_t);
 
 	if (!check_user_logged(user, conn, err)) {
 		return;
 	}
 
-	char* path = malloc(14 + strlen(post->dest));  // 14??
-	char* response;
+	path = malloc(14 + strlen(post->dest));  // 14??
 
 	insert_alias_in_db(post->dest, user);
 
@@ -79,11 +82,8 @@ void process_post_cmd(connection_t* conn, command_post_t* post) {
 
 	/**/ file_from_row_data(path, post->data, post->size);
 
-	response = "file OK";
 
-	err->msg = "OK";
-
-	send_data(strdup(response), strlen(response), conn, err);
+	send_data("File OK", strlen("File OK"), conn, err);
 
 	if (err->code) {
 		ERROR("send failed with code %d", err->code);

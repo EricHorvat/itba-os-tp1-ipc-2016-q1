@@ -140,4 +140,6 @@ int main(int argc, char** argv) {
 		shell_index     = 0;
 	}
 	//close resources: DB, MSQ, FIFO
+	
+	return 0;
 }

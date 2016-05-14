@@ -96,7 +96,7 @@ const char* stringify_command_login(command_login_t* cmd) {
 	return json_object_to_json_string(json_object_object);
 }
 
-const char* stringify_command_logout() {
+const char* stringify_command_logout(void) {
 	json_object* json_object_object      = json_object_new_object();
 	json_object* json_object_string_kind = json_object_new_string("command.logout");
 
@@ -105,7 +105,7 @@ const char* stringify_command_logout() {
 	return json_object_to_json_string(json_object_object);
 }
 
-const char* stringify_command_close() {
+const char* stringify_command_close(void) {
 	json_object* json_object_object      = json_object_new_object();
 	json_object* json_object_string_kind = json_object_new_string("command.close");
 

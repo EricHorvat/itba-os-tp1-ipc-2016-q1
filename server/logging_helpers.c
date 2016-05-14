@@ -1,24 +1,30 @@
 #ifdef __LOGGING__
-#include <server_utilss.h>
+#include <helpers/logging_helpers.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <msqueue.h>
 #include <mqueue.h>
-mqd_t mq;
+#include <unistd.h>
+#include <sys/wait.h>
+#include <utils.h>
+#include <errno.h>
 
 #define LOGGING_BINARY_DIR "./logging.bin"
 
-void init_logging_server();
-int  tried_to_start_server = 0;
+static mqd_t mq;
+
+static void init_logging_server(void);
+static int  tried_to_start_server = 0;
 
 void log_mq(char* kind, char* str);
 
-void init_mq() {
-	int child_pid = 0;
+void init_mq(void) {
+
 	if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY)) < 0) {
 		//SERVER DE LOGGING APAGADO
+		INFO("logging server is shutdown. booting");
 		if (!tried_to_start_server) {
 			init_logging_server();
 			tried_to_start_server++;
@@ -47,18 +53,22 @@ void log_success(char* str) {
 void log_mq(char* kind, char* str) {
 	char* msg_f;
 
-	msg_f = malloc(sizeof(char) * (strlen(kind) + 2 + strlen(str) + 2));
+	INFO("logging to message queue");
+
+	msg_f = (char*)malloc(strlen(kind) + 2 + strlen(str) + 2);
 	sprintf(msg_f, "%s: %s\n", kind, str);
-	if (mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0) {
-		printf("msg q");
+	if ( mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0 ) {
+		ERROR("msq failed with error %d\tmsg:%s", errno, strerror(errno));
 	}
 }
 
-void init_logging_server() {
-	int    child_pid = 0;
+static void init_logging_server(void) {
+	pid_t    child_pid = 0;
 	char **args, **envp;
 
 	if ((child_pid = fork()) == 0) {
+
+		// child
 
 		args    = malloc(sizeof(char*) * 2);
 		envp    = malloc(sizeof(char*));
@@ -67,12 +77,11 @@ void init_logging_server() {
 		args[1] = NULL;
 		execve(LOGGING_BINARY_DIR, args, envp);
 
-	} else if (child_pid < 0) {
-
-		printf("CANT FORK\n");
-		return;
+	} else if (child_pid > 0) {
+		waitpid(child_pid, NULL, 0);
+	} else {
+		ERROR("CANT FORK\n");
 	}
-
-	waitpid(child_pid, NULL, 0);
+	
 }
 #endif

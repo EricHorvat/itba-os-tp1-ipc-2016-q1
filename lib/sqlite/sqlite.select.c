@@ -6,13 +6,15 @@
 
 int create_select_query(sqlite_select_query_t* query) {
 
-	query->table     = malloc(sizeof(char) * MAX_NAME_LENGTH);
-	query->atributes = malloc(sizeof(char*) * MAX_COLUMNS);
+	int i = 0;
 
-	for (int i = 0; i < MAX_COLUMNS; i++) {
+	query->table     = (char*)malloc(MAX_NAME_LENGTH);
+	query->atributes = (char**)malloc(sizeof(char*) * MAX_COLUMNS);
+
+	for (; i < MAX_COLUMNS; i++) {
 		query->atributes[i] = NULL;
 	}
-	query->where = malloc(sizeof(char) * WHERE_LENGTH);
+	query->where = (char*)malloc(WHERE_LENGTH);
 	sprintf(query->where, "1=1");
 	return NO_QUERY_ERROR;
 }
@@ -28,12 +30,14 @@ int set_select_query_table(sqlite_select_query_t* query, char* table) {
 }
 
 int set_select_query_atribute(sqlite_select_query_t* query, char* atribute) {
+	int i = 0;
+
 	if (query == NULL) {
 		errno = NULL_QUERY;
 		return -1;
 	}
 
-	int i = 0;
+	
 	while (query->atributes[i] != NULL && i++ < MAX_COLUMNS)
 		;
 
@@ -57,6 +61,7 @@ int set_select_query_where(sqlite_select_query_t* query, char* column, char* op,
 
 char* select_query_to_str(sqlite_select_query_t* query) {
 	int size;
+	char* query_str;
 	if (query == NULL) {
 		errno = NULL_QUERY;
 		return NULL;
@@ -68,7 +73,7 @@ char* select_query_to_str(sqlite_select_query_t* query) {
 	if (query->atributes[0] == NULL)
 		query->atributes[0] = "*";
 
-	char* query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
+	query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
 
 	if (query->atributes[3] != NULL)
 		printf("%s\n", query->atributes[3]);

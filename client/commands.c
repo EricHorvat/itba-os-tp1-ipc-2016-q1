@@ -19,7 +19,7 @@ typedef struct {
 static bool initialized_commands = no;
 static bool logged               = no;
 
-static void              initialize_commands();
+static void              initialize_commands(void);
 static client_command_t* new_command(char* name, char* correct_use, char* help, int (*cmd)(connection_t*, client_command_info_t* info, char** argv, int argc));
 static bool show_help_for_command(char* arg, client_command_info_t* info);
 
@@ -38,7 +38,7 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 
 static client_command_t** commands;
 
-static void initialize_commands() {
+static void initialize_commands(void) {
 
 	int i = 0;
 

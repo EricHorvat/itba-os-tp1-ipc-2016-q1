@@ -33,12 +33,14 @@ int set_delete_query_where(sqlite_delete_query_t* query, char* where) {
 }
 
 char* delete_query_to_str(sqlite_delete_query_t* query) {
+	char* query_str;
+
 	if (query == NULL) {
 		errno = NULL_QUERY;
 		return NULL;
 	}
 
-	char* query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
+	query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
 	sprintf(query_str, "DELETE FROM %s WHERE %s;", query->table, (query->where != NULL ? query->where : "1=1"));
 
 	return query_str;

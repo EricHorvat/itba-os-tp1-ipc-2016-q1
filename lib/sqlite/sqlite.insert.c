@@ -6,10 +6,12 @@
 
 int create_insert_query(sqlite_insert_query_t* query) {
 
+	int i = 0;
+
 	query->table     = malloc(sizeof(char) * MAX_NAME_LENGTH);
 	query->atributes = malloc(sizeof(char*) * MAX_COLUMNS);
 	query->values    = malloc(sizeof(char*) * MAX_COLUMNS);
-	for (int i = 0; i < MAX_COLUMNS; i++) {
+	for (; i < MAX_COLUMNS; i++) {
 		query->atributes[i] = NULL;
 		query->values[i]    = NULL;
 	}
@@ -28,19 +30,22 @@ int set_insert_query_table(sqlite_insert_query_t* query, char* table) {
 }
 
 int set_insert_query_value(sqlite_insert_query_t* query, char* atribute, char* value) {
+	int i = 0;
+	char* atr;
+	char* val;
+
 	if (query == NULL) {
 		errno = NULL_QUERY;
 		return -1;
 	}
-
-	int i = 0;
+	
 	while (query->atributes[i] != NULL && i++ < MAX_COLUMNS)
 		;
 
 	if (i != MAX_COLUMNS) {
-		char* atr = malloc(strlen(atribute));
+		atr = (char*)malloc(strlen(atribute));
 		sprintf(atr, "%s", atribute);
-		char* val = malloc(strlen(value));
+		val = (char*)malloc(strlen(value));
 		sprintf(val, "%s", value);
 		query->atributes[i] = atr;
 		query->values[i]    = val;
@@ -50,6 +55,7 @@ int set_insert_query_value(sqlite_insert_query_t* query, char* atribute, char* v
 }
 
 char* insert_query_to_str(sqlite_insert_query_t* query) {
+	char* query_str;
 	if (query == NULL) {
 		errno = NULL_QUERY;
 		return NULL;
@@ -63,7 +69,7 @@ char* insert_query_to_str(sqlite_insert_query_t* query) {
 		return NULL;
 	}
 
-	char* query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
+	query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
 	sprintf(query_str, "INSERT INTO %s(%s) VALUES(%s);", query->table, to_fields_string(query->atributes), to_fields_string(query->values));
 	return query_str;
 }

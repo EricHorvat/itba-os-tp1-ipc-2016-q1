@@ -19,7 +19,7 @@ int getrnd(int min, int max) {
 	return rand() % (max - min) + min;
 }
 
-char* gen_boundary() {
+char* gen_boundary(void) {
 
 	char*  boundary;
 	size_t length;
@@ -42,13 +42,14 @@ char** split_arguments(char* sentence) {
 	int index = 0, last_begin = 0, count = 0, last_was_char = no,
 	    quotation_open = no;
 	char** result;
+	char* aux_str;
 
 	while (sentence[index] != '\0') {
 		if (sentence[index] == ' ') {
 			if (last_was_char == yes && !quotation_open) {
 				count++;
 
-				char* aux_str = malloc(sizeof(char) * (index - last_begin + 1));
+				aux_str = (char*)malloc( index - last_begin + 1 );
 
 				memset(aux_str, '\0', (index - last_begin + 1));
 				strncpy(aux_str, sentence + last_begin, index - last_begin);
@@ -74,7 +75,7 @@ char** split_arguments(char* sentence) {
 			return NULL;
 		else {
 			count++;
-			char* aux_str = malloc(sizeof(char) * (index - last_begin + 1));
+			aux_str = malloc(sizeof(char) * (index - last_begin + 1));
 			strncpy(aux_str, sentence + last_begin, index - last_begin);
 			aux_str[index - last_begin] = '\0';
 

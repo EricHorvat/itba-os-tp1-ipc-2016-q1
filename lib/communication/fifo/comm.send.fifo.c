@@ -56,13 +56,14 @@ static void *data_listener(void *data) {
 	size_t read_bytes = 0;
 	//int fd;
 	char* buffer;
+	comm_thread_info_t *info;
 
 	long int self = (long int)pthread_self();
 
 	buffer = (char*)malloc(2048);
 	memset(buffer, '\0', 2048);
 
-	comm_thread_info_t *info = (comm_thread_info_t*)data;
+	info = (comm_thread_info_t*)data;
 
 	err = NEW(comm_error_t);
 

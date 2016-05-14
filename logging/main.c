@@ -4,34 +4,45 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "msqueue.h"
-
+#include <msqueue.h>
+#include <utils.h>
 #include <errno.h>
 
-mqd_t create_mq();
-void read_mq(mqd_t mq, char* buff);
-void close_mq(mqd_t mq);
+static mqd_t create_mq(void);
+static void read_mq(mqd_t mq, char* buff);
+static void close_mq(mqd_t mq);
 
-int main(int argc, char const* argv[]) {
+int main(void) {
 	mqd_t mq;
 	int   end_service = 0;
 	char  buff[MSG_MAX_SIZE + 1];
+	FILE* log_file;
 
 	mq = create_mq();
 	printf("Logging service launched successfully \n");
 
-	FILE* log_file = fopen("./server.log", "wt");
+	log_file = fopen("./server.log", "wt");
+	if (!log_file)
+		ERROR("could not open log file");
 	fclose(log_file);
 
 	while (!end_service) {
+
 		read_mq(mq, buff);
+
 		if (!strncmp(buff, MSG_END, strlen(MSG_END))) {
+
 			end_service = 1;
 			printf("Logging service ended successfully\n");
+
 		} else {
+
 			log_file = fopen("./server.log", "a+t");
+			if (!log_file)
+				ERROR("could not open log file for append");
 			fputs(buff, log_file);
 			fclose(log_file);
+
 		}
 	}
 
@@ -40,7 +51,7 @@ int main(int argc, char const* argv[]) {
 	return 0;
 }
 
-mqd_t create_mq() {
+mqd_t create_mq(void) {
 
 	mqd_t mq;
 

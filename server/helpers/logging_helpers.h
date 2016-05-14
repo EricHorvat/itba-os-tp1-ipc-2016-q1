@@ -23,7 +23,7 @@
 #define LOG_SUCCESS(str, msg, ...) SUCCESS(msg, ##__VA_ARGS__)
 #endif
 
-void init_mq();
+void init_mq(void);
 
 void log_info(char* msg);
 void log_error(char* msg);

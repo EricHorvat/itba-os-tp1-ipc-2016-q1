@@ -129,7 +129,7 @@ static void listen_connections(server_config_t* config) {
 	size_t addr_len = 0;
 	char*  log_str;
 
-	comm_error_t *listen_error;
+	comm_error_t *error;
 
 	size_t num_threads = MIN_THREADS;
 
@@ -163,12 +163,12 @@ static void listen_connections(server_config_t* config) {
 
 	LOG_INFO(log_str, "master::listening on name: %s", connection->server_addr->host);
 
-	listen_error = NEW(comm_error_t);
+	error = NEW(comm_error_t);
 
-	comm_listen(connection, listen_error);
+	comm_listen(connection, error);
 
-	if (listen_error->code != 0) {
-		ERROR("master::listen returned error %d", listen_error->code);
+	if (error->code) {
+		ERROR("master::listen returned error %d", error->code);
 		abort();
 	}
 
@@ -176,7 +176,12 @@ static void listen_connections(server_config_t* config) {
 
 	while (1) {
 		LOG_WARN(log_str, "master::waiting for connections");
-		comm_accept(connection, nil);
+		comm_accept(connection, error);
+
+		if (error->code) {
+			ERROR("master::accept returned error %d", error->code);
+			break;
+		}
 
 		if (!connection) {
 			LOG_ERROR(log_str, "connection is null");
@@ -203,7 +208,10 @@ static void listen_connections(server_config_t* config) {
 			while (1) {
 				// si no manda nada cuelga aca
 				LOG_WARN(log_str, "worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
-				command = comm_receive_data(connection, nil);
+				command = comm_receive_data(connection, error);
+				if (error->code) {
+					ERROR("worker %d::received failed with code", getpid(), error->code);
+				}
 				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 				if (current_thread == num_threads - 1) {
@@ -237,12 +245,15 @@ static void listen_connections(server_config_t* config) {
 
 int main(int argc, char** argv) {
 
-	// init_mq();
-
+	
 	server_config_t* config;
 	char*            config_file_opt;
 
 	config = NEW(server_config_t);
+
+#ifdef __LOGGING__
+	init_mq();
+#endif
 
 	config_file_opt = process_arguments(argc, argv);
 

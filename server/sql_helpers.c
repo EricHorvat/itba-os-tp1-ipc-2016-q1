@@ -45,14 +45,16 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 
 	sqlite_insert_query_t* query;
 	int                    ans;
+	char* path_str;
+	char* alias_str;
 
 	query = NEW(sqlite_insert_query_t);
 
 	create_insert_query(query);
 	set_insert_query_table(query, "files");
 
-	char* path_str  = malloc((13 + strlen(file_alias) + 1) * sizeof(char));
-	char* alias_str = malloc((strlen(file_alias) + 1) * sizeof(char));
+	path_str = malloc((13 + strlen(file_alias) + 1) * sizeof(char));
+	alias_str = malloc((strlen(file_alias) + 1) * sizeof(char));
 
 	sprintf(path_str, "\"%s%s\"", user->home, file_alias);
 
@@ -72,7 +74,13 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 /*RETURN USER HOME*/
 int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 
-	sqlite_select_query_t* query = malloc(sizeof(sqlite_select_query_t));
+	char* usern;
+	char* pass;
+	sqlite_select_query_t* query;
+	char** response_array;
+	char* response;
+
+	query = NEW(sqlite_select_query_t);
 
 	create_select_query(query);
 
@@ -81,9 +89,9 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	set_select_query_atribute(query, "user_id");
 	set_select_query_atribute(query, "is_admin");
 
-	char* usern = malloc((2 + strlen(username) + 1) * sizeof(char));
-	char* pass  = malloc((2 + strlen(password) + 1) * sizeof(char));
-	char* response;
+	usern = malloc((2 + strlen(username) + 1) * sizeof(char));
+	pass  = malloc((2 + strlen(password) + 1) * sizeof(char));
+	
 
 	sprintf(usern, "\"%s\"", username);
 	sprintf(pass, "\"%s\"", password);
@@ -95,7 +103,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 		/*ERROR*/
 		return -1;
 	}
-	char** response_array;
+	
 	response_array = split_arguments(response);
 	user->name     = username;
 	user->home     = response_array[0];
@@ -108,14 +116,18 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 int new_user_in_db(user_t* user) {
 	sqlite_insert_query_t* query = malloc(sizeof(sqlite_insert_query_t));
 	int                    ans;
+	char* name_str;
+	char* pass_str;
+	char* home_str;
+	char* root_str;
 
 	create_insert_query(query);
 	set_insert_query_table(query, "users");
 
-	char* name_str = malloc((1 + strlen(user->username) + 2) * sizeof(char));
-	char* pass_str = malloc((1 + strlen(user->password) + 2) * sizeof(char));
-	char* home_str = malloc((4 + strlen(user->username) + 2) * sizeof(char));
-	char* root_str = malloc(2 * sizeof(char));
+	name_str = malloc((1 + strlen(user->username) + 2) * sizeof(char));
+	pass_str = malloc((1 + strlen(user->password) + 2) * sizeof(char));
+	home_str = malloc((4 + strlen(user->username) + 2) * sizeof(char));
+	root_str = malloc(2 * sizeof(char));
 
 	sprintf(name_str, "\"%s\"", user->username);
 	sprintf(pass_str, "\"%s\"", user->password);
