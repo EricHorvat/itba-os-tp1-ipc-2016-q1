@@ -16,7 +16,7 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {  // por favor camb
 
 	sqlite_select_query_t* query;
 
-	int   ans;
+	char*   ans;
 	char* alias_str;
 	char* path_str;
 

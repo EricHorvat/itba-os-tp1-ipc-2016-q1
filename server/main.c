@@ -129,6 +129,8 @@ static void listen_connections(server_config_t* config) {
 	size_t addr_len = 0;
 	char*  log_str;
 
+	comm_error_t *listen_error;
+
 	size_t num_threads = MIN_THREADS;
 
 	log_str = (char*)malloc(MAX_LOG_LENGTH);
@@ -161,7 +163,16 @@ static void listen_connections(server_config_t* config) {
 
 	LOG_INFO(log_str, "master::listening on name: %s", connection->server_addr->host);
 
-	comm_listen(connection, nil);
+	listen_error = NEW(comm_error_t);
+
+	comm_listen(connection, listen_error);
+
+	if (listen_error->code != 0) {
+		ERROR("master::listen returned error %d", listen_error->code);
+		abort();
+	}
+
+	LOG_SUCCESS(log_str, "master::listen ok");
 
 	while (1) {
 		LOG_WARN(log_str, "master::waiting for connections");

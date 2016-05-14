@@ -3,6 +3,10 @@ CFLAGS=-I./ -I./server -I./client -I./logging/headers -Ilib/communication/header
 CFLAGS+=-Wall -Wextra -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wdeclaration-after-statement
 GCCFLAGS=-pthread
 MATHFLAGS=-lm
+ifdef LOGGING
+MATHFLAGS+=-lrt
+endif
+
 
 GCCMACROS=-D__DEBUG__ 
 ifdef LOGGING

@@ -157,9 +157,9 @@ int init_sqlite_server(int read_pipe, int write_pipe) {
 		char* query_buffer = malloc(sizeof(char) * MAX_QUERY_LENGTH);
 
 		int   q   = 0;
-		char* aux = malloc(sizeof(char) * 2);
+		char* aux = (char*)malloc(2);
 		strcpy(query_buffer, "");
-		aux[1] = '\0';
+		aux[1] = ZERO;
 		do {
 			read(read_pipe, aux, 1);
 			strcat(query_buffer, aux);

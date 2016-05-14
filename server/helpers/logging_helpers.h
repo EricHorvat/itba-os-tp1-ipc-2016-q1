@@ -13,10 +13,14 @@
 #define LOG_WARN(str, msg, ...)     \
 	sprintf(str, msg, ##__VA_ARGS__); \
 	log_warning(str)
+#define LOG_SUCCESS(str, msg, ...)     \
+	sprintf(str, msg, ##__VA_ARGS__); \
+	log_success(str)
 #else
 #define LOG_INFO(str, msg, ...) INFO(msg, ##__VA_ARGS__)
 #define LOG_ERROR(str, msg, ...) ERROR(msg, ##__VA_ARGS__)
 #define LOG_WARN(str, msg, ...) WARN(msg, ##__VA_ARGS__)
+#define LOG_SUCCESS(str, msg, ...) SUCCESS(msg, ##__VA_ARGS__)
 #endif
 
 void init_mq();
