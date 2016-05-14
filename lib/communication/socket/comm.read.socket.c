@@ -55,25 +55,21 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	{
 		ERROR("cant create socket");
+		error->code = ERR_SOCKET_NOT_CREATED;
+		error->msg = "cant create socket";
 		return;
 	}
-
-	/*USA EL PUERTO AL VOLVER A EJECUTAR, PREGUNTAR SI DEBERIA ESTAR/
-	int aux = 1;
-	if (setsockopt(fd,SOL_SOCKET,SO_REUSEADDR,&aux,sizeof(aux)) == -1) { 
-		perror("setsockopt"); 
-		exit(1); 
-	}  
-
-	info("SOCKET OPT",__LINE__);
-	*/
 
 	if ((bind(fd, (struct sockaddr *) serv_addr, sizeof(struct sockaddr_in))) < 0) {
 		ERROR("cant bind socket");
+		error->code = ERR_SOCKET_NOT_BINDED;
+		error->msg = "cant binded socket";
 		return;
 	}
-	if ((listen(fd,5/*TODO configuration in .h*/)) < 0) {
+	if ((listen(fd,MAX_SOCKETS_CONNECTIONS)) < 0) {
 		ERROR("cant listen socket");
+		error->code = ERR_SOCKET_NOT_LISTENED;
+		error->msg = "cant listen socket";
 		return;
 	}
 
@@ -94,12 +90,12 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	
 	int fd, read_bytes = 0, at;
-	char * buffer = (char*)malloc(2048);
+	char * buffer = (char*)malloc(BUFFER_LENGTH);
 
 	struct sockaddr_in client_addr;
 	socklen_t clilen;
 
-	memset(buffer, ZERO, 2048);
+	memset(buffer, ZERO, BUFFER_LENGTH);
 
 	INFO("connection_file: %s", conn->connection_file);
 
@@ -110,6 +106,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	clilen = sizeof(client_addr);
 	if ((fd = accept(at/*FEO*/, (struct sockaddr *) &client_addr, &clilen)) < 0) {
 		ERROR("cant accept socket");
+		error->code = ERR_SOCKET_NOT_ACCEPTED;
+		error->msg = "cant accepted socket";
 	}
 	INFO("socket accepted");
 
@@ -124,6 +122,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 	if (address_from_url(buffer, conn->client_addr)) {
 		ERROR("address cant be created");
+		error->code = ERR_SOCKET_ADDRESS_NOT_CREATED;
+		error->msg = "address cant be created";
 	}
 
 	// INFO("writing");
@@ -144,8 +144,8 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	size_t read_bytes = 0;
 
 
-	buffer = (char*)malloc(2048);
-	memset(buffer, ZERO, 2048);
+	buffer = (char*)malloc(BUFFER_LENGTH);
+	memset(buffer, ZERO, BUFFER_LENGTH);
 
 	INFO("reading from %d", conn->res_fd);
 

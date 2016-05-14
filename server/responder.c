@@ -16,14 +16,14 @@ fs_user_t* user = NULL;
 bool check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err);
 void create_user_folder(char* username);
 
-void process_get_cmd(connection_t* conn, command_get_t* cmd) {
+void process_get_cmd(connection_t* conn, command_get_t* cmd, comm_error_t* err) {
 
 	size_t        size;
 	void*         contents;
-	comm_error_t* err;
 	char*         p;
 	char*         aux;
-	err = NEW(comm_error_t);
+	if(err == NULL)
+		err = NEW(comm_error_t);
 
 	if (!check_user_logged(user, conn, err)) {
 		return;
@@ -32,9 +32,8 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd) {
 	if (!strcmp((aux = ask_for_file_to_db(cmd->path, user)), "END")) {
 		/*ERROR*/
 		ERROR("FILE IS NOT IN DB");
-
-		err = NEW(comm_error_t);
-
+		err->code = ERR_ASKED_FILE_IS_NOT_AVAILABLE;
+		err->msg = "FILE IS NOT IN DB";
 		send_data("\0", 1, conn, err);
 		return;
 	}
@@ -50,7 +49,7 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd) {
 	LOG("contents: %s", (char*)contents);
 
 	err->msg  = "OK";
-	err->code = 0;
+	err->code = NO_COMM_ERROR;
 
 	send_data(strdup(contents), size, conn, err);
 
@@ -61,19 +60,20 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd) {
 	}
 }
 
-void process_post_cmd(connection_t* conn, command_post_t* post) {
+void process_post_cmd(connection_t* conn, command_post_t* post, comm_error_t * err) {
 
-	comm_error_t* err;
 	size_t        path_length;
 	char* path;
 
-	err = NEW(comm_error_t);
+	if (err == NULL) {
+		err = NEW(comm_error_t);
+	}
 
 	if (!check_user_logged(user, conn, err)) {
 		return;
 	}
 
-	path = malloc(14 + strlen(post->dest));  // 14??
+	path = malloc(1+ strlen(user->home)+ 1 + strlen(post->dest)+1);
 
 	insert_alias_in_db(post->dest, user);
 
@@ -81,6 +81,8 @@ void process_post_cmd(connection_t* conn, command_post_t* post) {
 	path[path_length] = '\0';
 
 	/**/ file_from_row_data(path, post->data, post->size);
+	err->msg  = "OK";
+	err->code = NO_COMM_ERROR;
 
 
 	send_data("File OK", strlen("File OK"), conn, err);
@@ -90,18 +92,19 @@ void process_post_cmd(connection_t* conn, command_post_t* post) {
 	}
 }
 
-void process_login_cmd(connection_t* conn, command_login_t* login) {
-
-	comm_error_t* err;
+void process_login_cmd(connection_t* conn, command_login_t* login, comm_error_t * err) {
 
 	int   aux;
 	char* response;
 
-	err = NEW(comm_error_t);
+	if (err == NULL) {
+		err = NEW(comm_error_t);
+	}
 
 	if (user != NULL) {
 		ERROR("USER ALREADY LOGGED IN");
 		err->msg = "Already logged in";
+		err->code = ERR_USER_ALREADY_LOGGED; 
 		send_data("You are already logged in", strlen("You are already logged in"), conn, err);
 	} else {
 		user = NEW(fs_user_t);
@@ -109,6 +112,7 @@ void process_login_cmd(connection_t* conn, command_login_t* login) {
 			/*ERROR*/
 			ERROR("USER DOES NOT EXIST");
 
+			err->code = ERR_USER_NOT_EXISTS;
 			err->msg = "Login failed";
 
 			send_data("Login failed", strlen("Login failed"), conn, err);
@@ -116,42 +120,45 @@ void process_login_cmd(connection_t* conn, command_login_t* login) {
 			return;
 		}
 		response = "Logged in successfully";
+		err->code = NO_COMM_ERROR;
 		err->msg = "Logged in successfully";
 		send_data(strdup(response), strlen(response), conn, err);
 	}
 	return;
 }
 
-void process_logout_cmd(connection_t* conn) {
+void process_logout_cmd(connection_t* conn, comm_error_t * err) {
 
-	comm_error_t* err;
-	err = NEW(comm_error_t);
+	if(err == NULL)
+		err = NEW(comm_error_t);
 	if (!check_user_logged(user, conn, err)) {
 		return;
 	}
 	err->msg = "OK";
+	err->code = NO_COMM_ERROR;
 	send_data("Log out successful", strlen("Log out successful"), conn, err);
 	user = NULL;
 	return;
 }
 
-void process_new_user_cmd(connection_t* conn, command_new_user_t* new_user) {
+void process_new_user_cmd(connection_t* conn, command_new_user_t* new_user, comm_error_t * err) {
 
-	comm_error_t* err;
-	err = NEW(comm_error_t);
+	if(err == NULL)
+		err = NEW(comm_error_t);
 	if (!check_user_logged(user, conn, err)) {
 		return;
 	}
 	if (user->is_admin == no) {
 		ERROR("USER HAVE NOT PERMISION");
 		err->msg = "HAVE NOT PERMISION";
+		err->code = ERR_USER_HAVE_NOT_PERMISSION;
 		send_data("HAVE NOT PERMISION", 10, conn, err);
 		return;
 	}
 	create_user_folder(new_user->user->username);
 	new_user_in_db(new_user->user);
-	printf("ddd%s\n", new_user->user->username);
-	//insert in db
+	err->msg  = "OK";
+	err->code = NO_COMM_ERROR;
 	send_data("User registered", 15, conn, err);
 	return;
 }
@@ -159,6 +166,7 @@ void process_new_user_cmd(connection_t* conn, command_new_user_t* new_user) {
 bool check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err) {
 	if (user == NULL) {
 		ERROR("USER NOT LOGGED");
+		err->code = ERR_USER_NOT_LOGGED;
 		err->msg = "NOT logged";
 		send_data("NOT logged", 10, conn, err);
 		return no;

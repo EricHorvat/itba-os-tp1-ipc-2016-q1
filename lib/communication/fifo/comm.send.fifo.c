@@ -1,4 +1,5 @@
 #include <comm.send.api.h>
+#include <communication.h>
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -105,7 +106,7 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *e
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
-	error->code = 0;
+	error->code = NO_COMM_ERROR;
 	error->msg = "Todo OK";
 	
 }

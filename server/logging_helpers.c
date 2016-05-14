@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <utils.h>
 #include <errno.h>
+#include <unistd.h>
 
 #define LOGGING_BINARY_DIR "./logging.bin"
 
@@ -33,7 +34,6 @@ void init_mq(void) {
 			exit(-1);
 		//}
 	}
-	printf("%d\n", mq);
 }
 
 void log_error(char* str) {
@@ -57,6 +57,7 @@ void log_mq(char* kind, char* str) {
 
 	msg_f = (char*)malloc(strlen(kind) + 2 + strlen(str) + 2);
 	sprintf(msg_f, "%s: %s\n", kind, str);
+	printf("%s\n", msg_f);
 	if ( mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0 ) {
 		ERROR("msq failed with error %d\tmsg:%s", errno, strerror(errno));
 	}
@@ -80,6 +81,6 @@ static void init_logging_server(void) {
 	} else if (child_pid < 0) {
 		ERROR("CANT FORK\n");
 	}
-	
+	sleep(1);
 }
 #endif

@@ -4,6 +4,7 @@
 #include <utils.h>
 #include <stdlib.h>
 #include <file_utils.h>
+#include <errno.h>
 
 typedef struct {
 	char* correct_use;
@@ -344,6 +345,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	command_post_t* cmd;
 	comm_error_t*   err;
 	parse_result_t* presult;
+	char * aux;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return 0;
@@ -372,8 +374,15 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	}
 
 	cmd->dest = argv[0];
-	cmd->data = encode_raw_data(raw_data_from_file(argv[1], &cmd->size), cmd->size);
-	// = strlen(cmd->data);//TODO CHANGE
+	aux = raw_data_from_file(argv[1], &cmd->size);
+	if (aux == NULL)
+	{
+		if(errno = ERR_FILE_NOT_OPENED){
+			ERROR("Cant open file");
+		}
+		return err->code =10001;
+	}
+	cmd->data = encode_raw_data(aux, cmd->size);
 
 	send_cmd_post(cmd, conn, err);
 

@@ -148,7 +148,7 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *e
 	flock(conn->req_fd, LOCK_UN);
 	INFO("unlocking fd(%d)", conn->req_fd);
 
-	error->code = 0;
+	error->code = NO_COMM_ERROR;
 	error->msg = "Todo OK";
 
 }

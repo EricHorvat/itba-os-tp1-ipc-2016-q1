@@ -5,6 +5,7 @@
 #include <utils.h>
 #include <stdlib.h>
 #include <types.h>
+#include <errno.h>
 
 sql_connection_t* sql_connection = NULL;
 
@@ -12,7 +13,7 @@ void set_sql_connection(sql_connection_t* sql_conn) {
 	sql_connection = sql_conn;
 }
 
-char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {  // por favor cambiale el nombre
+char* ask_for_file_to_db(char* file_alias, fs_user_t* user) { 
 
 	sqlite_select_query_t* query;
 
@@ -27,8 +28,8 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {  // por favor camb
 	set_select_query_table(query, "files");
 	set_select_query_atribute(query, "path");
 
-	alias_str = malloc((10 + strlen(file_alias) + 1) * sizeof(char));
-	path_str  = malloc(10 + (strlen(user->home) + 1) * sizeof(char));
+	alias_str = malloc((1 + strlen(file_alias) + 2) * sizeof(char));
+	path_str  = malloc(1 + (strlen(user->home) + 3) * sizeof(char));
 
 	sprintf(alias_str, "\"%s\"", file_alias);
 	sprintf(path_str, "\'%s%%\'", user->home);
@@ -36,7 +37,11 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {  // por favor camb
 	set_select_query_where(query, "alias", "=", alias_str);
 	set_select_query_where(query, "path", "LIKE", path_str);
 
-	ans = run_select_sqlite_query(sql_connection, query);
+
+	if (!strcmp((ans = run_select_sqlite_query(sql_connection, query)), "END")) {
+		errno = EMPTY_RESPONSE;
+		return NULL;
+	}
 
 	return ans;
 }
@@ -66,9 +71,7 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 
 	ans = run_insert_sqlite_query(sql_connection, query);
 
-	/*if(!strcmp(ans, "END"))
-		return 1;*/
-	return 0;
+	return EXPECTED_RESPONSE;
 }
 
 /*RETURN USER HOME*/
@@ -100,8 +103,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	set_select_query_where(query, "password", "=", pass);
 
 	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), "END")) {
-		/*ERROR*/
-		return -1;
+		return EMPTY_RESPONSE;
 	}
 	
 	response_array = split_arguments(response);
@@ -110,7 +112,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	user->id       = atoi(response_array[1]);
 	user->is_admin = atoi(response_array[2]);
 
-	return 0;
+	return EXPECTED_RESPONSE;
 }
 
 int new_user_in_db(user_t* user) {
@@ -139,9 +141,7 @@ int new_user_in_db(user_t* user) {
 	set_insert_query_value(query, "home", home_str);
 	set_insert_query_value(query, "is_admin", root_str);
 
-	ans = run_insert_sqlite_query(sql_connection, query);
+	run_insert_sqlite_query(sql_connection, query);
 
-	/*if(!strcmp(ans, "END"))
-		return 1;*/
-	return 0;
+	return EXPECTED_RESPONSE;
 }

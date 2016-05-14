@@ -15,4 +15,7 @@ int file_from_row_data(char* path, char* data, size_t size);
 char* encode_raw_data(char* data, size_t size);
 char* decode_to_raw_data(char* data);
 
+#define ERR_FILE_NOT_OPENED 9000
+#define NO_FILE_ERROR 0
+
 #endif

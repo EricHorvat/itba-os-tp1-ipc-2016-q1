@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <utils.h>
 #include <string.h>
+#include <errno.h>
 
 /**
  * checks whether a file exists
@@ -56,6 +57,7 @@ char* raw_data_from_file(char* path, size_t* length) {
 	INFO("opening %s", path);
 	if ((file = fopen(path, "r")) == NULL) {
 		ERROR("cant open file %s", path);
+		errno = ERR_FILE_NOT_OPENED;
 		return NULL;
 	}
 	fseek(file, 0, SEEK_END);
@@ -131,7 +133,8 @@ int file_from_row_data(char* path, char* data, size_t size) {
 	INFO("opening %s", path);
 	if ((file = fopen(path, "w")) == NULL) {
 		ERROR("cant open file %s", path);
-		return -1;
+		errno = ERR_FILE_NOT_OPENED;
+		return ERR_FILE_NOT_OPENED;
 	}
 	INFO("opened, to write");
 	written_bytes = 0;
@@ -141,5 +144,5 @@ int file_from_row_data(char* path, char* data, size_t size) {
 	INFO("ENDING");
 	fclose(file);
 
-	return 0;
+	return NO_FILE_ERROR;
 }

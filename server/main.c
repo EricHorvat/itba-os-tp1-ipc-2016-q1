@@ -75,22 +75,22 @@ static void* server_responder(void* data) {
 	} else if (strcmp(result->kind, "command.get") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.get_cmd->path);
-		process_get_cmd(req->connection, result->data.get_cmd);
+		process_get_cmd(req->connection, result->data.get_cmd, err);
 
 	} else if (strcmp(result->kind, "command.post") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.get_cmd->path);
-		process_post_cmd(req->connection, result->data.post_cmd);
+		process_post_cmd(req->connection, result->data.post_cmd, err);
 
 	} else if (strcmp(result->kind, "command.login") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.login_cmd->user->username);
-		process_login_cmd(req->connection, result->data.login_cmd);
+		process_login_cmd(req->connection, result->data.login_cmd, err);
 
 	} else if (strcmp(result->kind, "command.logout") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->kind);
-		process_logout_cmd(req->connection);
+		process_logout_cmd(req->connection, err);
 	} else if (strcmp(result->kind, "command.close") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->kind);
@@ -101,7 +101,7 @@ static void* server_responder(void* data) {
 	} else if (strcmp(result->kind, "command.new_user") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
-		process_new_user_cmd(req->connection, result->data.new_user_cmd);
+		process_new_user_cmd(req->connection, result->data.new_user_cmd, err);
 	}
 	pthread_mutex_unlock(&lock);
 
@@ -253,7 +253,6 @@ int main(int argc, char** argv) {
 
 #ifdef __LOGGING__
 	init_mq();
-	printf("a\n");
 #endif
 
 	config_file_opt = process_arguments(argc, argv);
