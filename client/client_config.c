@@ -6,7 +6,7 @@
 #include <utils.h>
 #include <stdlib.h>
 
-void process_arguments(int argc, char **argv, client_args_t *client_args) {
+void process_arguments(int argc, char** argv, client_args_t* client_args) {
 
 	// http://www.gnu.org/software/libc/manual/html_falsede/Example-of-Getopt.html#Example-of-Getopt
 
@@ -17,8 +17,8 @@ void process_arguments(int argc, char **argv, client_args_t *client_args) {
 		client_args = NEW(client_args_t);
 
 	client_args->client_name = NULL;
-	client_args->server = NULL;
-	client_args->protocol = NULL;
+	client_args->server      = NULL;
+	client_args->protocol    = NULL;
 
 	opterr = 0;
 	while ((c = getopt(argc, argv, "n:s:p:")) != -1) {
@@ -30,8 +30,8 @@ void process_arguments(int argc, char **argv, client_args_t *client_args) {
 				client_args->server = optarg;
 				break;
 			case 'p':
-				
-				if ( strcmp(optarg, "fd") != 0 && strcmp(optarg, "socket") != 0) {
+
+				if (strcmp(optarg, "fd") != 0 && strcmp(optarg, "socket") != 0) {
 					fprintf(stderr, "%s is not an allowed protocol\n", optarg);
 					abort();
 				}
@@ -57,7 +57,7 @@ void process_arguments(int argc, char **argv, client_args_t *client_args) {
 	}
 
 	for (index = optind; index < argc; index++)
-		printf ("non-option argument %s\n", argv[index]);
+		printf("non-option argument %s\n", argv[index]);
 
 	return;
 }

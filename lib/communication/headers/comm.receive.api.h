@@ -12,10 +12,8 @@
  * 
  **/
 
-
-void comm_listen(connection_t *conn, comm_error_t *error);
-void comm_accept(connection_t *conn, comm_error_t *error);
-char* comm_receive_data(connection_t *conn, comm_error_t *error);
+void comm_listen(connection_t* conn, comm_error_t* error);
+void comm_accept(connection_t* conn, comm_error_t* error);
+char* comm_receive_data(connection_t* conn, comm_error_t* error);
 // comm_addr_t *server, comm_addr_t *client
 #endif
-

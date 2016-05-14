@@ -1,9 +1,6 @@
 #ifndef __UTILS_H_
 #define __UTILS_H_
 
-//#include <server_utils.h>
-#include <server_utilss.h>
-
 typedef unsigned char bool;
 typedef unsigned char boolean;
 
@@ -31,30 +28,28 @@ typedef char* string;
 #define SLASH '/'
 #define COLON ':'
 
-#define ANSI_COLOR_RED     "\x1b[31m"
-#define ANSI_COLOR_GREEN   "\x1b[32m"
-#define ANSI_COLOR_BROWN   "\x1b[33m"
-#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_RED "\x1b[31m"
+#define ANSI_COLOR_GREEN "\x1b[32m"
+#define ANSI_COLOR_BROWN "\x1b[33m"
+#define ANSI_COLOR_BLUE "\x1b[34m"
 #define ANSI_COLOR_MAGENTA "\x1b[35m"
-#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_CYAN "\x1b[36m"
 
-#define ANSI_COLOR_DARK_GRAY     "\x1b[1;30m"
-#define ANSI_COLOR_LIGHT_RED     "\x1b[1;31m"
-#define ANSI_COLOR_LIGHT_GREEN   "\x1b[1;32m"
-#define ANSI_COLOR_YELLOW        "\x1b[1;33m"
-#define ANSI_COLOR_LIGHT_BLUE    "\x1b[1;34m"
-#define ANSI_COLOR_LIGHT_PURPLE  "\x1b[1;35m"
-#define ANSI_COLOR_LIGHT_CYAN    "\x1b[1;35m"
+#define ANSI_COLOR_DARK_GRAY "\x1b[1;30m"
+#define ANSI_COLOR_LIGHT_RED "\x1b[1;31m"
+#define ANSI_COLOR_LIGHT_GREEN "\x1b[1;32m"
+#define ANSI_COLOR_YELLOW "\x1b[1;33m"
+#define ANSI_COLOR_LIGHT_BLUE "\x1b[1;34m"
+#define ANSI_COLOR_LIGHT_PURPLE "\x1b[1;35m"
+#define ANSI_COLOR_LIGHT_CYAN "\x1b[1;35m"
 
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_RESET "\x1b[0m"
 
 // Logging
 
 #ifdef __DEBUG__
 
-#define DEBUG_STR ANSI_COLOR_DARK_GRAY "%s:%d " ANSI_COLOR_RESET ANSI_COLOR_MAGENTA "<%s>:" ANSI_COLOR_RESET  "\t"
-
-// #define DEBUG(fmt, ...) printf( fmt, __FILE__, __FUNC__, __LINE__, __VA_ARGS__)
+#define DEBUG_STR ANSI_COLOR_DARK_GRAY "%s:%d " ANSI_COLOR_RESET ANSI_COLOR_MAGENTA "<%s>:" ANSI_COLOR_RESET "\t"
 
 #define LOG(msg, ...) printf(DEBUG_STR msg "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
 #define INFO(msg, ...) printf(DEBUG_STR ANSI_COLOR_CYAN msg ANSI_COLOR_RESET "\n", __FILE__, __LINE__, __FUNCTION__, ##__VA_ARGS__)
@@ -72,14 +67,10 @@ typedef char* string;
 
 #endif
 
-#define S_INFO(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_info(str)
-#define S_ERROR(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_error(str)
-#define S_WARN(str, msg,...) sprintf(str,msg, ##__VA_ARGS__);// log_warning(str)
-
-int getrnd(int, int);
-char *gen_boundary();
-char ** split_arguments(char * sentence);
-char ** add(char * str, char ** str_vector, int cant);
-int count_elements(char ** vector);
+int    getrnd(int, int);
+char*  gen_boundary(void);
+char** split_arguments(char* sentence);
+char** add(char* str, char** str_vector, int cant);
+int count_elements(char** vector);
 
 #endif

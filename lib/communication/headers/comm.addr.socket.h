@@ -11,9 +11,8 @@ typedef enum {
 } comm_addr_error_t;
 
 typedef struct {
-    unsigned int port;
-    // sock_addr_in
+	unsigned int port;
+	// sock_addr_in
 } comm_addr_extra_t;
 
 #endif
-

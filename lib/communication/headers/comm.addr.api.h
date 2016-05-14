@@ -11,11 +11,11 @@
 #endif
 
 typedef struct {
-	char *url;
-	char *protocol;
-	char *host;
-	bool valid;
-	comm_addr_extra_t *extra;
+	char*              url;
+	char*              protocol;
+	char*              host;
+	bool               valid;
+	comm_addr_extra_t* extra;
 } comm_addr_t;
 
 /**
@@ -24,8 +24,6 @@ typedef struct {
  * @param  address allocated comm_addr_t
  * @return         0 if url was ok. other number otherwise
  */
-comm_addr_error_t address_from_url(char *url, comm_addr_t *address);
-
+comm_addr_error_t address_from_url(char* url, comm_addr_t* address);
 
 #endif
-

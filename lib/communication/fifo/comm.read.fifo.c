@@ -50,9 +50,14 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 
 		if (mkfifo(input_fifo, FIFO_PERMS) < 0) {
 			fprintf(stderr, ANSI_COLOR_RED"mkfifo failed\n"ANSI_COLOR_RESET);
+			error->code = 2001;
+			error->msg = "FIFO creation failed";
 			return;
 		}
 	}
+
+	error->code = 0;
+	error->msg = "Listen Sucessful";
 
 	conn->connection_file = (char*)malloc(input_fifo_len+1);
 	strcpy(conn->connection_file, input_fifo);
@@ -60,10 +65,6 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	conn->sense = COMMUNICATION_SERVER_CLIENT;
 
 	free(input_fifo);
-}
-
-static void info(char* info) {
-	printf(ANSI_COLOR_CYAN"%s:%d %s\n"ANSI_COLOR_RESET, __FILE__, __LINE__, info);
 }
 
 void comm_accept(connection_t *conn, comm_error_t *error) {
@@ -80,6 +81,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
 		// fill error;
 		ERROR("cant open %s", conn->connection_file);
+		error->code = 2002;
+		error->msg = "Opening connection file failed";
 		return;
 	}
 
@@ -101,6 +104,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	if (address_from_url(buffer, client_aux)) {
 		fprintf(stderr, ANSI_COLOR_RED"%s:%d %s is an invalid address\n"ANSI_COLOR_RESET, __FILE__, __LINE__, buffer);
 		ERROR("%s is an invalid address",buffer);
+		error->code = 2003;
+		error->msg = "Threeway handshake failed. Invalid Address";
 		return;
 	}
 
@@ -115,6 +120,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%d: %s fifo failed creation err:%d msg:%s\n"ANSI_COLOR_RESET, __LINE__, request_fifo, errno, strerror(errno));
 		ERROR("%s fifo failed creation err:%d msg:%s", request_fifo, errno, strerror(errno));
+		error->code = 2004;
+		error->msg = "Request FIFO creation failed";
 		return;
 	}
 
@@ -129,6 +136,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 		abort();
 		// rellenar el error
 		ERROR("%s open failed err: %d msg: %s", response_fifo, errno, strerror(errno));
+		error->code = 2005;
+		error->msg = "Response FIFO open failed";
 		return; 
 	}
 
@@ -142,7 +151,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	if ( (fd = open(request_fifo, O_RDONLY)) < 0 ) {
 		fprintf(stderr, ANSI_COLOR_RED"%d: open failed %s\n"ANSI_COLOR_RESET, __LINE__, conn->connection_file);
 		ERROR("open failed %s",conn->connection_file);
-		// fill error;
+		error->code = 2006;
+		error->msg = "Request FIFO open failed";
 		return;
 	}
 
@@ -160,6 +170,8 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 		fprintf(stderr, ANSI_COLOR_RED"%d: Authentication failed got %s\n"ANSI_COLOR_RESET, __LINE__, buffer);
 		ERROR("Authentication failed got %s",buffer);
+		error->code = 2004;
+		error->msg = "Threeway handshake failed Authentication";
 		return;
 	}
 
@@ -170,6 +182,9 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	free(buffer);
 	free(backup);
 
+	error->code = 0;
+	error->msg = "Accept Sucessful";
+
 	conn->res_fd = fd;
 	conn->state = CONNECTION_STATE_OPEN;
 	
@@ -177,11 +192,9 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 
 char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 
-	char *buffer, *boundary, *accum;
+	char *buffer, *boundary;
 	size_t read_bytes = 0;
 	size_t boundary_len = 0;
-
-	bool c = no;
 
 	buffer = (char*)malloc(2048);
 	memset(buffer, '\0', 2048);
@@ -203,7 +216,6 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	do {
 		read(conn->res_fd, buffer+read_bytes, 1);
 		if (*(buffer+read_bytes) == ZERO) {
-			ERROR("found zero");	
 			read_bytes++;
 			read(conn->res_fd, buffer+read_bytes, 1);
 		}
@@ -213,6 +225,9 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	buffer[read_bytes-boundary_len] = '\0';
 
 	free(boundary);
+
+	error->code = 0;
+	error->msg = "Receive Data Sucessful";
 
 	return buffer;
 

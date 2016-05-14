@@ -38,20 +38,20 @@ typedef struct {
 
 int init_sqlite_server(int read_pipe, int write_pipe);
 
-char * run_sqlite_query(sql_connection_t * conn, char* query_text);
+char* run_sqlite_query(sql_connection_t* conn, char* query_text);
 
-int run_insert_sqlite_query(sql_connection_t * conn, sqlite_insert_query_t * query);
+int run_insert_sqlite_query(sql_connection_t* conn, sqlite_insert_query_t* query);
 
-char * run_select_sqlite_query(sql_connection_t * conn, sqlite_select_query_t * query);
+char* run_select_sqlite_query(sql_connection_t* conn, sqlite_select_query_t* query);
 
-int run_delete_sqlite_query(sql_connection_t * conn, sqlite_delete_query_t * query);
+int run_delete_sqlite_query(sql_connection_t* conn, sqlite_delete_query_t* query);
 
-int run_update_sqlite_query(sql_connection_t * conn, sqlite_update_query_t * query);
+int run_update_sqlite_query(sql_connection_t* conn, sqlite_update_query_t* query);
 
-char * to_fields_string(char** fields);
+char* to_fields_string(char** fields);
 
-int open_sql_conn(sql_connection_t * conn);
+int open_sql_conn(sql_connection_t* conn);
 
-int close_sql_conn(sql_connection_t * conn);
+int close_sql_conn(sql_connection_t* conn);
 
 #endif

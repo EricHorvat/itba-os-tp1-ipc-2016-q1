@@ -14,4 +14,3 @@ typedef struct {
 } comm_addr_extra_t;
 
 #endif
-

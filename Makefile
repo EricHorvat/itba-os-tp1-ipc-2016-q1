@@ -1,10 +1,13 @@
 GCC=gcc
 CFLAGS=-I./ -I./server -I./client -I./logging/headers -Ilib/communication/headers -Ilib/serialization/headers -Ilib/sqlite/headers -Ilib/file_utils/headers
-CFLAGS+=-Wall
+CFLAGS+=-Wall -Wextra -Wstrict-prototypes -Wold-style-definition -Wmissing-prototypes -Wmissing-declarations -Wdeclaration-after-statement
 GCCFLAGS=-pthread
 MATHFLAGS=-lm
 
-GCCMACROS=-D__DEBUG__
+GCCMACROS=-D__DEBUG__ 
+ifdef LOGGING
+GCCMACROS+=-D__LOGGING__
+endif
 
 IMPORT_CFLAGS=$(shell pkg-config --cflags json-c)
 IMPORT_LDFLAGS=$(shell pkg-config --libs json-c) $(shell pkg-config --libs sqlite3)
@@ -60,7 +63,11 @@ ROOT_OBJECTS=$(ROOT_SOURCES:.c=.o)
 
 
 
+ifdef LOGGING
+all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID) $(LOGGING_ID)
+else
 all: $(LIB_ID) $(CLIENT_ID) $(SERVER_ID)
+endif
 
 $(CLIENT_ID): $(LIB_ID) $(CLIENT_OBJECTS) $(ROOT_OBJECTS)
 	$(GCC) $(GCCFLAGS) $(CFLAGS) $(IMPORT_CFLAGS) -o $(CLIENT_OUTPUT) $(ROOT_OBJECTS) $(CLIENT_OBJECTS) $(LIB_OUTPUT) $(IMPORT_LDFLAGS) $(MATHFLAGS)
@@ -84,4 +91,4 @@ clean:
 	rm -rfv *.o client/*.o server/*.o logging/*.o lib/communication/*/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o lib/*.a
 	rm -fv /tmp/*.fifo /tmp/*.req /tmp/*.res
 
-.PHONY: all clean
+.PHONY: all wipe clean

@@ -5,7 +5,7 @@
 #include <comm.connection.api.h>
 #include <stdlib.h>
 
-typedef void (*comm_callback_t)(comm_error_t *err, connection_t *conn, char *response);
+typedef void (*comm_callback_t)(comm_error_t* err, connection_t* conn, char* response);
 
 /**
  * 
@@ -14,8 +14,7 @@ typedef void (*comm_callback_t)(comm_error_t *err, connection_t *conn, char *res
  * 
  **/
 
-void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *error);
-void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_callback_t cb);
+void comm_send_data(void* data, size_t size, connection_t* conn, comm_error_t* error);
+void comm_send_data_async(void* data, size_t size, connection_t* conn, comm_callback_t cb);
 
 #endif
-
