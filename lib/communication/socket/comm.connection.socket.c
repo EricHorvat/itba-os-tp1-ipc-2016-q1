@@ -30,7 +30,7 @@ comm_error_code_t connection_open(connection_t *conn) {
 		return ERR_SOCKET_NOT_CREATED;
 	} 
 	
-	server = gethostbyname(/**OJOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO*/"127.0.0.1");
+	server = gethostbyname(conn->server_addr->host);
 	if (server == NULL) {
 		ERROR("no such host");
 		return ERR_NO_SUCH_HOST;
@@ -40,8 +40,9 @@ comm_error_code_t connection_open(connection_t *conn) {
 	bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
 
 	// HARDCODE ALERT
-	serv_addr.sin_port = 9005/*OJOOOOOOOOOOOOOOOOOOOOOOOO*/;
-
+	INFO("port: %d", conn->server_addr->extra->port);
+	serv_addr.sin_port = conn->server_addr->extra->port;//9005/*OJOOOOOOOOOOOOOOOOOOOOOOOO*/;
+	INFO("port %d", conn->server_addr->extra->port);
 	if (connect(fd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0)  {
 		ERROR("cant connect to socket");
 		return ERR_SOCKET_NOT_CONNECTED;

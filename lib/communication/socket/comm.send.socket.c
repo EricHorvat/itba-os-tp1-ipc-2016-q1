@@ -1,5 +1,5 @@
 #include <comm.send.api.h>
-
+#include <communication.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -13,30 +13,6 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
-#ifdef __MACH__
-#include <mach/clock.h>
-#include <mach/mach.h>
-// http://cursuri.cs.pub.ro/~apc/2003/resources/pthreads/uguide/users-77.htm
-pthread_cond_t done  = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t calculating = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-void current_utc_time(struct timespec *ts) {
-
-#ifdef __MACH__ // OS X does not have clock_gettime, use clock_get_time
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-	host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-	clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	ts->tv_sec = mts.tv_sec;
-	ts->tv_nsec = mts.tv_nsec;
-#else
-	clock_gettime(CLOCK_REALTIME, ts);
-#endif
-
-}
-
 #include <file_utils.h>
 #include <utils.h>
 #include <comm.fifo.h>
@@ -59,16 +35,6 @@ typedef struct {
 } comm_data_writer_ret_t;
 
 typedef void* (*pthread_func_t)(void* data);
-
-static unsigned int TIMEOUT = 10;
-
-/**
- * [set_timeout description]
- * @param t timeout to set
- */
-void set_timeout(unsigned int t) {
-	TIMEOUT = t;
-}
 
 /**
 
@@ -192,4 +158,12 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
 		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);
 	}
 //*/
+}
+
+bool isConnectionOpen(connection_t* conn) {
+	return conn->state == CONNECTION_STATE_OPEN;
+}
+
+bool isConnectionClosed(connection_t* conn) {
+	return conn->state == CONNECTION_STATE_CLOSED;
 }

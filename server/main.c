@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
 	SUCCESS("Server started successfully with the following configuration:");
 	LOG("Server Name:\t%s\n", config->server_name);
 #ifdef __SOCKET__
-	printf("Port:\t%d\n", config->port);
+	LOG("Port:\t%d\n", config->port);
 #endif
 
 	listen_connections(config);

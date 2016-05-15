@@ -49,8 +49,7 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	serv_addr->sin_family = AF_INET;
 	serv_addr->sin_addr.s_addr = INADDR_ANY;
 
-	// HARDCODE ALERT!
-	serv_addr->sin_port = 9005;//conn->server_addr->port;
+	serv_addr->sin_port = conn->server_addr->extra->port;
 
 
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	{
@@ -82,6 +81,9 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 	bzero(conn->connection_file, 10);
 	sprintf(conn->connection_file, "%d", fd);
 	/**/
+
+	error->code = 0;
+	error->msg= "OK";
 
 	conn->state = CONNECTION_STATE_IDLE;
 }
@@ -133,6 +135,9 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	conn->req_fd = fd;
 	conn->state = CONNECTION_STATE_OPEN;
 
+	error->code = 0;
+	error->msg= "OK";
+
 }
 
 char* comm_receive_data(connection_t *conn, comm_error_t *error) {
@@ -156,6 +161,9 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	//
 	INFO("read from %d", conn->res_fd);
 	INFO("read [%s]", buffer);
+
+	error->code = 0;
+	error->msg= "OK";
 
 	return buffer;
 
