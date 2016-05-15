@@ -20,6 +20,7 @@
 #include <helpers/logging_helpers.h>
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
+#include <helpers/monitor_helpers.h>
 
 #define MIN_THREADS 10
 
@@ -52,6 +53,8 @@ static void* server_responder(void* data) {
 	req     = (client_request_t*)data;
 
 	result = parse_encoded((const char*)req->input);
+
+	post_status(pid, self, STATUS_OK);
 
 	LOG_INFO(log_str, "worker %d::thread %ld::client sent: [%s]", pid, self, result->kind);
 
@@ -109,6 +112,7 @@ static void* server_responder(void* data) {
 	pthread_mutex_unlock(&lock);
 
 	if (err->code) {
+		post_status(pid, self, STATUS_ERROR);
 		LOG_ERROR(log_str, "worker %d::thread %ld::error: %d\tmsg:%s", pid, self, err->code, err->msg);
 	} else if (!closing){
 		LOG_INFO(log_str, "worker %d::thread %ld::data sent successfully: (%s)", pid, self, err->msg);
@@ -151,6 +155,7 @@ static void listen_connections(server_config_t* config) {
 	sprintf(addr, "fifo://%s", config->server_name);
 	if (address_from_url(addr, connection->server_addr) != 0) {
 		LOG_ERROR(log_str, "Invalid Address");
+		post_status(0, 0, STATUS_ERROR);
 		abort();
 	}
 #else
@@ -159,6 +164,7 @@ static void listen_connections(server_config_t* config) {
 	sprintf(addr, "fifo://%s:%d", config->server_name, config->port);
 	if (address_from_url(addr, connection->server_addr) != 0) {
 		LOG_ERROR(log_str, "Invalid Address");
+		post_status(0, 0, STATUS_ERROR);
 		abort();
 	}
 #endif
@@ -172,6 +178,7 @@ static void listen_connections(server_config_t* config) {
 
 	if (error->code) {
 		ERROR("master::listen returned error %d", error->code);
+		post_status(0, 0, STATUS_ERROR);
 		abort();
 	}
 
@@ -179,17 +186,21 @@ static void listen_connections(server_config_t* config) {
 
 	while (1) {
 		LOG_WARN(log_str, "master::waiting for connections");
+		post_status(0, 0, STATUS_IDLE);
 		comm_accept(connection, error);
 
 		if (error->code) {
 			ERROR("master::accept returned error %d", error->code);
+			post_status(0, 0, STATUS_ERROR);
 			break;
 		}
 
 		if (!connection) {
+			post_status(0, 0, STATUS_ERROR);
 			LOG_ERROR(log_str, "connection is null");
 			break;
 		}
+		post_status(0, 0, STATUS_OK);
 		LOG_INFO(log_str, "master::opened connection for %s", connection->client_addr->host);
 
 		childPID = fork();
@@ -203,18 +214,25 @@ static void listen_connections(server_config_t* config) {
 				abort();
 			}
 
+			post_status(getpid(), 0, STATUS_OK);
 			if (pthread_mutex_init(&lock, NULL) != 0) {
 				LOG_ERROR(log_str, "mutex init failed");
+				post_status((int)getpid(), 0, STATUS_ERROR);
 				exit(3);
 			}
 
 			while (!isConnectionClosed(connection)) {
 				// si no manda nada cuelga aca
 				LOG_WARN(log_str, "worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
+				post_status(getpid(), 0, STATUS_IDLE);
 				command = comm_receive_data(connection, error);
 				if (error->code) {
+					post_status(getpid(), 0, STATUS_ERROR);
 					ERROR("worker %d::received failed with code", getpid(), error->code);
+					post_status(getpid(), 0, STATUS_WARN);
+					exit(1);
 				}
+				post_status(getpid(), 0, STATUS_OK);
 				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 				if (current_thread == num_threads - 1) {
@@ -231,6 +249,7 @@ static void listen_connections(server_config_t* config) {
 				strcpy(request->input, command);
 
 				if ((pthread_ret = pthread_create(threads[current_thread], NULL, server_responder, request))) {
+					post_status(getpid(), 0, STATUS_WARN);
 					LOG_ERROR(log_str, "worker %d::pthread create returned %d", getpid(), pthread_ret);
 				}
 
@@ -261,6 +280,8 @@ int main(int argc, char** argv) {
 	init_mq();
 #endif
 
+	init_monitor();
+
 	config_file_opt = process_arguments(argc, argv);
 
 	if (config_file_opt) {
@@ -274,6 +295,8 @@ int main(int argc, char** argv) {
 			abort();
 		}
 	}
+
+	post_status(0, 0, STATUS_OK);
 
 	SUCCESS("Server started successfully with the following configuration:");
 	LOG("Server Name:\t%s\n", config->server_name);
