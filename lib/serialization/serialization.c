@@ -301,21 +301,29 @@ parse_result_t* receive(connection_t* conn, comm_error_t* error) {
 
 void send_string(char* string, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_string(string);
+	error->msg="OK";
+	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_int(int number, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_int(number);
+	error->msg="OK";
+	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_double(double number, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_double(number);
+	error->msg="OK";
+	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_data(void* data, size_t size, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_data(data, size);
+	error->msg="OK";
+	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 

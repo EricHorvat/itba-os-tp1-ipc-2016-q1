@@ -37,7 +37,7 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd, comm_error_t* err) 
 			err->code = ERR_ASKED_FILE_IS_NOT_AVAILABLE;
 			err->msg = "FILE IS NOT IN DB";
 		}
-		send_data("FILE IS NOT IN DB", 1, conn, err);
+		send_data("FILE IS NOT IN DB", 17, conn, err);
 		return;
 	}
 
@@ -73,6 +73,16 @@ void process_post_cmd(connection_t* conn, command_post_t* post, comm_error_t * e
 	}
 
 	if (!check_user_logged(user, conn, err)) {
+		return;
+	}
+
+
+	if ( ask_for_file_to_db(post->dest, user) != NULL) {
+		
+		ERROR("FILE EXISTS");
+		err->code = ERR_FILE_EXISTS;
+		err->msg = "FILE EXISTS";
+		send_data("FILE EXISTS", 11, conn, err);
 		return;
 	}
 
@@ -152,10 +162,18 @@ void process_new_user_cmd(connection_t* conn, command_new_user_t* new_user, comm
 		return;
 	}
 	if (user->is_admin == no) {
-		ERROR("USER HAVE NOT PERMISION");
+		ERROR("HAVE NOT PERMISION");
 		err->msg = "HAVE NOT PERMISION";
 		err->code = ERR_USER_HAVE_NOT_PERMISSION;
 		send_data("HAVE NOT PERMISION", 10, conn, err);
+		return;
+	}
+
+	if(user_in_db(new_user->user->username)){
+		ERROR("USER ALREADY EXISTS");
+		err->msg = "User already exists";
+		err->code = ERR_USER_EXISTS;
+		send_data("User already exists", 19, conn, err);
 		return;
 	}
 	create_user_folder(new_user->user->username);

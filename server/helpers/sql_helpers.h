@@ -17,6 +17,7 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user);
 int insert_alias_in_db(char* file_alias, fs_user_t* user);
 int user_identification_in_db(char* username, char* password, fs_user_t* user);
 int new_user_in_db(user_t* user);
+bool user_in_db(char* username);
 
 #define EXPECTED_RESPONSE 0
 

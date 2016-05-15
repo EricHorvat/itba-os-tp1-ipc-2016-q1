@@ -38,7 +38,7 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {
 	set_select_query_where(query, "path", "LIKE", path_str);
 
 
-	if (!strcmp((ans = run_select_sqlite_query(sql_connection, query)), "END")) {
+	if (!strcmp((ans = run_select_sqlite_query(sql_connection, query)), END_STR)) {
 		errno = EMPTY_RESPONSE;
 		return NULL;
 	}
@@ -58,10 +58,10 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 	create_insert_query(query);
 	set_insert_query_table(query, "files");
 
-	path_str = malloc((13 + strlen(file_alias) + 1) * sizeof(char));
+	path_str = malloc((1 + strlen(user->home)+ 1 + strlen(file_alias) + 2) * sizeof(char));
 	alias_str = malloc((strlen(file_alias) + 1) * sizeof(char));
 
-	sprintf(path_str, "\"%s%s\"", user->home, file_alias);
+	sprintf(path_str, "\"%s/%s\"", user->home, file_alias);
 
 	sprintf(alias_str, "\"%s\"", file_alias);
 
@@ -74,7 +74,6 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 	return EXPECTED_RESPONSE;
 }
 
-/*RETURN USER HOME*/
 int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 
 	char* usern;
@@ -102,7 +101,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	set_select_query_where(query, "username", "=", usern);
 	set_select_query_where(query, "password", "=", pass);
 
-	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), "END")) {
+	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), END_STR)) {
 		return EMPTY_RESPONSE;
 	}
 	
@@ -113,6 +112,34 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	user->is_admin = atoi(response_array[2]);
 
 	return EXPECTED_RESPONSE;
+}
+
+
+bool user_in_db(char* username) {
+
+	char* user;
+	sqlite_select_query_t* query;
+	char** response_array;
+	char* response;
+
+	query = NEW(sqlite_select_query_t);
+
+	create_select_query(query);
+
+	set_select_query_table(query, "users");
+	set_select_query_atribute(query, "home");
+	
+	user = malloc((2 + strlen(username) + 1) * sizeof(char));
+	
+	sprintf(user, "\"%s\"", username);
+	
+	set_select_query_where(query, "username", "=", user);
+	
+	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), END_STR)) {
+		return no;
+	}
+
+	return yes;
 }
 
 int new_user_in_db(user_t* user) {
