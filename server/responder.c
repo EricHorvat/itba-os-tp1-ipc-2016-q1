@@ -184,6 +184,24 @@ void process_new_user_cmd(connection_t* conn, command_new_user_t* new_user, comm
 	return;
 }
 
+void process_change_pass_cmd(connection_t* conn, command_change_pass_t* change, comm_error_t * err){
+
+
+	if (err == NULL) {
+		err = NEW(comm_error_t);
+	}
+
+	if (!check_user_logged(user, conn, err)) {
+		return;
+	}
+
+	update_pass_in_db(user,change->pass);
+	err->msg  = "OK";
+	err->code = NO_COMM_ERROR;
+	send_data("PASSWORD UPDATED", 16, conn, err);
+	return;
+}
+
 bool check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err) {
 	if (user == NULL) {
 		ERROR("USER NOT LOGGED");

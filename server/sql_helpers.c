@@ -172,3 +172,23 @@ int new_user_in_db(user_t* user) {
 
 	return EXPECTED_RESPONSE;
 }
+
+bool update_pass_in_db(fs_user_t * user, char* new_pass){
+	
+	sqlite_update_query_t* query = malloc(sizeof(sqlite_update_query_t));
+	
+	char* pass_str;
+	
+	create_update_query(query);
+	set_update_query_table(query, "users");
+	
+	pass_str = malloc((1 + strlen(new_pass) + 2) * sizeof(char));
+	sprintf(pass_str, "\"%s\"", new_pass);
+
+	set_update_query_value(query, "password", pass_str);
+	set_update_query_where(query, "user_id","=",user->id);
+
+	run_update_sqlite_query(sql_connection, query);
+
+	return EXPECTED_RESPONSE;
+}

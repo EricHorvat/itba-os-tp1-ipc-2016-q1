@@ -56,13 +56,13 @@ int set_update_query_value(sqlite_update_query_t* query, char* atribute, char* v
 	return NO_QUERY_ERROR;
 }
 
-int set_update_query_where(sqlite_update_query_t* query, char* where) {
+int set_update_query_where(sqlite_update_query_t* query, char* column, char* op, char* raw_value) {
 	if (query == NULL) {
 		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
-	sprintf(query->where, "%s", where);
+	sprintf(query->where, "%s AND %s %s %s", query->where, column, op, raw_value);
 	return NO_QUERY_ERROR;
 }
 

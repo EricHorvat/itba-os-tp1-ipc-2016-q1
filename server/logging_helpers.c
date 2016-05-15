@@ -17,7 +17,6 @@
 static mqd_t mq;
 
 static void init_logging_server(void);
-static int  tried_to_start_server = 0;
 
 void log_mq(char* kind, char* str);
 

@@ -14,16 +14,17 @@ typedef struct {
 	 * con que me puedo encontrar
 	 */
 	union {
-		int                 i;
-		double              d;
-		char*               str;
-		void*               data;
-		command_get_t*      get_cmd;
-		command_post_t*     post_cmd;
-		command_login_t*    login_cmd;
-		command_logout_t*   logout_cmd;
-		command_close_t*    close_cmd;
-		command_new_user_t* new_user_cmd;
+		int                 	i;
+		double              	d;
+		char*               	str;
+		void*               	data;
+		command_get_t*      	get_cmd;
+		command_post_t*     	post_cmd;
+		command_login_t*    	login_cmd;
+		command_logout_t*   	logout_cmd;
+		command_close_t*    	close_cmd;
+		command_new_user_t*		new_user_cmd;
+		command_change_pass_t* 	change_pass_cmd;
 	} data;
 
 } parse_result_t;
@@ -47,6 +48,7 @@ void send_cmd_login(command_login_t* cmd, connection_t* conn, comm_error_t* erro
 void send_cmd_logout(connection_t* conn, comm_error_t* error);
 void send_cmd_close(connection_t* conn, comm_error_t* error);
 void send_cmd_new_user(command_new_user_t* cmd, connection_t* conn, comm_error_t* error);
+void send_cmd_change_pass(command_change_pass_t* cmd, connection_t* conn, comm_error_t* error);
 
 // commands async
 void send_cmd_get_async(command_get_t* cmd, connection_t* conn, comm_callback_t cb);
@@ -63,6 +65,7 @@ const char* stringify_command_post(command_post_t* cmd);
 const char* stringify_command_login(command_login_t* cmd);
 const char* stringify_command_logout(void);
 const char* stringify_command_new_user(command_new_user_t* cmd);
+const char* stringify_command_change_pass(command_change_pass_t* cmd);
 const char* stringify_command_close(void);
 
 // parse

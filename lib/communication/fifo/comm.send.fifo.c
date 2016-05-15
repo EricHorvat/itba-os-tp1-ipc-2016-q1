@@ -150,3 +150,11 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
 	}
 
 }
+
+bool isConnectionOpen(connection_t* conn) {
+	return conn->state == CONNECTION_STATE_OPEN;
+}
+
+bool isConnectionClosed(connection_t* conn) {
+	return conn->state == CONNECTION_STATE_CLOSED;
+}

@@ -34,4 +34,8 @@ typedef struct {
 	user_t *user;
 } command_new_user_t;
 
+typedef struct {
+	char * pass;
+} command_change_pass_t;
+
 #endif

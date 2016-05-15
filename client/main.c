@@ -133,7 +133,11 @@ int main(int argc, char** argv) {
 		} while (c != EOF && !command_read);
 
 		if ((err = cmd_parse(connection, shell_buffer))) {
-			ERROR("Command failed with error: %d", err);
+			if(err != COMMAND_CLOSE_OK ){
+				ERROR("Command failed with error: %d", err);	
+			} else {
+				connection_close(connection);
+			}
 		}
 		shell_buffer[0] = 0;
 		command_read    = no;

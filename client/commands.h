@@ -4,10 +4,6 @@
 #include <serialization.h>
 
 int cmd_parse(connection_t *, char*);
-
-bool isConnectionOpen(connection_t * conn);
-bool isConnectionClosed(connection_t * conn);
-
 #define COMMAND_OK 0
 #define ERR_COMMAND_NOT_FOUND 100
 #define ERR_ALREADY_DONE 101
@@ -16,6 +12,7 @@ bool isConnectionClosed(connection_t * conn);
 #define ERR_CONNECTION_NOT_LOGGED 104
 #define ERR_MISUSE_ARGUMENT 105
 #define ERR_BAD_ADDRESS 106
+#define COMMAND_CLOSE_OK 10000
 
 
 #endif

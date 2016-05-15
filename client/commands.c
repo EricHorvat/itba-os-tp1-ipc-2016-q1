@@ -36,6 +36,7 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 static int cmd_commands(connection_t* conn, client_command_info_t* info, char** argv, int argc);
 static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv, int argc);
 static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** argv, int argc);
+static int cmd_change_pass(connection_t* conn, client_command_info_t* info, char** argv, int argc);
 
 static client_command_t** commands;
 
@@ -57,6 +58,7 @@ static void initialize_commands(void) {
 	commands[i++] = new_command("logout", "logout", "CAMlogout help", &cmd_logout);
 	commands[i++] = new_command("commands", "commands", "CAMcommands help", &cmd_commands);
 	commands[i++] = new_command("newuser", "newuser name yes/no [pass]", "CAMnewuser help", &cmd_new_user);
+	commands[i++] = new_command("ch_password", "ch_password pass", "CAMch_password help", &cmd_change_pass);
 	commands[i]   = NULL;
 }
 
@@ -400,7 +402,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	aux = raw_data_from_file(argv[1], &cmd->size);
 	if (aux == NULL)
 	{
-		if(errno = ERR_FILE_NOT_OPENED){
+		if(errno == ERR_FILE_NOT_OPENED){
 			ERROR("Cant open file");
 			err->msg="Can\'t open file";
 		}
@@ -658,14 +660,12 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 
 	send_cmd_close(conn, err);  //-> should set CONNECTION_STATE_CLOSED, close only one fifo and exit
 
-	conn->state = CONNECTION_STATE_CLOSED;
-
 	if (err->code) {
 		ERROR("send failed code %d msg: %s", err->code, err->msg);
 		return err->code;
 	}
 
-	return COMMAND_OK;
+	return COMMAND_CLOSE_OK;
 }
 
 static int cmd_commands(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
@@ -709,10 +709,61 @@ static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv
 	return COMMAND_OK;
 }
 
-bool isConnectionOpen(connection_t* conn) {
-	return conn->state == CONNECTION_STATE_OPEN;
-}
+static int cmd_change_pass(connection_t* conn, client_command_info_t* info, char** argv, int argc){
+	command_change_pass_t* cmd;
+	comm_error_t*   err;
+	parse_result_t* presult;
+	char * aux;
 
-bool isConnectionClosed(connection_t* conn) {
-	return conn->state == CONNECTION_STATE_CLOSED;
+	if (argc == 1 && show_help_for_command(argv[0], info))
+		return COMMAND_OK;
+
+	if (!isConnectionOpen(conn)) {
+		WARN("Please open connection first");
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
+	}
+
+	if (!logged) {
+		WARN("Please login first");
+		err->msg = "Not logged";
+		return ERR_CONNECTION_NOT_LOGGED;
+	}
+
+	cmd = NEW(command_post_t);
+
+	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
+
+	if (argc != 1) {
+
+		ERROR("Correct use: %s", info->correct_use);
+		err->msg="More or less arguments";
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
+	}
+
+	send_cmd_change_pass(cmd, conn, err);
+
+	if (err->code) {
+		ERROR("send failed code %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	INFO("fetching");
+	presult = receive(conn, err);
+	INFO("fetched");
+
+	if (err->code) {
+		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		return err->code;
+	}
+
+	SUCCESS("result of kind %s", presult->kind);
+
+	if (strcmp(presult->kind, "data") == 0) {
+		SUCCESS("response: %s", (char*)presult->data.data);
+	}
+
+	return COMMAND_OK;
 }

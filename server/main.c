@@ -37,12 +37,13 @@ static void* server_responder(void* data);
 
 static void* server_responder(void* data) {
 
-	client_request_t* req;
-	comm_error_t*     err;
-	parse_result_t*   result;
-	int               pid;
-	long int          self;
-	char*             log_str;
+	client_request_t* 	req;
+	comm_error_t*     	err;
+	parse_result_t*   	result;
+	int               	pid;
+	long int          	self;
+	char*             	log_str;
+	bool				closing = no;
 
 	log_str = (char*)malloc(MAX_LOG_LENGTH);
 	pid     = (int)getpid();
@@ -94,20 +95,22 @@ static void* server_responder(void* data) {
 	} else if (strcmp(result->kind, "command.close") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->kind);
-		//WTF?
-		/*connection_close(conn);
-		printf("PLPL%s\n");*/
-		//req->connetion->state == CONNECTION_STATE_CLOSED;
+		req->connection->state = CONNECTION_STATE_CLOSED;
+		closing = yes;
 	} else if (strcmp(result->kind, "command.new_user") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
 		process_new_user_cmd(req->connection, result->data.new_user_cmd, err);
+	} else if (strcmp(result->kind, "command.change_pass") == 0) {
+
+		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
+		process_change_pass_cmd(req->connection, result->data.change_pass_cmd, err);
 	}
 	pthread_mutex_unlock(&lock);
 
 	if (err->code) {
 		LOG_ERROR(log_str, "worker %d::thread %ld::error: %d\tmsg:%s", pid, self, err->code, err->msg);
-	} else {
+	} else if (!closing){
 		LOG_INFO(log_str, "worker %d::thread %ld::data sent successfully: (%s)", pid, self, err->msg);
 	}
 
@@ -205,7 +208,7 @@ static void listen_connections(server_config_t* config) {
 				exit(3);
 			}
 
-			while (1) {
+			while (!isConnectionClosed(connection)) {
 				// si no manda nada cuelga aca
 				LOG_WARN(log_str, "worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
 				command = comm_receive_data(connection, error);
@@ -235,6 +238,9 @@ static void listen_connections(server_config_t* config) {
 
 				free(command);
 			}
+			connection_close(connection);
+
+			//if(shutdown) {sendshoutdown()}
 
 			LOG_INFO(log_str, "worker %d::ending", getpid());
 

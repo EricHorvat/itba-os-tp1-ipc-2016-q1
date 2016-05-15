@@ -3,6 +3,7 @@
 
 #include <comm.errors.h>
 #include <comm.addr.api.h>
+#include <utils.h>
 
 typedef enum {
 	CONNECTION_STATE_IDLE,
@@ -29,6 +30,9 @@ typedef struct {
 
 comm_error_code_t connection_open(connection_t* conn);
 comm_error_code_t connection_close(connection_t* conn);
+
+bool isConnectionOpen(connection_t* conn);
+bool isConnectionClosed(connection_t* conn);
 
 #define CONNECTION_OK 0
 
