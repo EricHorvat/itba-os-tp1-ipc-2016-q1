@@ -591,7 +591,7 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 	if (strcmp(argv[1], "yes") == 0) {
 		cmd->user->admin = yes;
 	} else if (strcmp(argv[1], "no") == 0) {
-		cmd->user->admin = yes;
+		cmd->user->admin = no;
 	} else {
 		ERROR("Correct use: %s", info->correct_use);
 		err->msg="Misuse argument";

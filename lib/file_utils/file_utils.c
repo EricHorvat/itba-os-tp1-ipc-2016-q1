@@ -125,7 +125,7 @@ char* decode_to_raw_data(char* data) {
 	return result;
 }
 
-int file_from_row_data(char* path, char* data, size_t size) {
+int file_from_raw_data(char* path, char* data, size_t size) {
 
 	FILE*  file;
 	size_t written_bytes;

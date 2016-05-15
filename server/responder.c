@@ -93,7 +93,7 @@ void process_post_cmd(connection_t* conn, command_post_t* post, comm_error_t * e
 	path_length       = sprintf(path, ".%s/%s", user->home, post->dest);
 	path[path_length] = '\0';
 
-	/**/ file_from_row_data(path, post->data, post->size);
+	/**/ file_from_raw_data(path, decode_to_raw_data(post->data), post->size);
 	err->msg  = "OK";
 	err->code = NO_COMM_ERROR;
 
