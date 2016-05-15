@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 fs_user_t* user = NULL;
 
@@ -29,12 +30,14 @@ void process_get_cmd(connection_t* conn, command_get_t* cmd, comm_error_t* err) 
 		return;
 	}
 
-	if (!strcmp((aux = ask_for_file_to_db(cmd->path, user)), "END")) {
-		/*ERROR*/
-		ERROR("FILE IS NOT IN DB");
-		err->code = ERR_ASKED_FILE_IS_NOT_AVAILABLE;
-		err->msg = "FILE IS NOT IN DB";
-		send_data("\0", 1, conn, err);
+	if ((aux = ask_for_file_to_db(cmd->path, user))== NULL) {
+		
+		if(errno == EMPTY_RESPONSE){
+			ERROR("FILE IS NOT IN DB");
+			err->code = ERR_ASKED_FILE_IS_NOT_AVAILABLE;
+			err->msg = "FILE IS NOT IN DB";
+		}
+		send_data("FILE IS NOT IN DB", 1, conn, err);
 		return;
 	}
 

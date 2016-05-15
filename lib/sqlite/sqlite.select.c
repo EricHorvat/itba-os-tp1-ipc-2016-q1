@@ -21,7 +21,7 @@ int create_select_query(sqlite_select_query_t* query) {
 
 int set_select_query_table(sqlite_select_query_t* query, char* table) {
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
@@ -33,7 +33,7 @@ int set_select_query_atribute(sqlite_select_query_t* query, char* atribute) {
 	int i = 0;
 
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
@@ -52,7 +52,7 @@ int set_select_query_atribute(sqlite_select_query_t* query, char* atribute) {
 
 int set_select_query_where(sqlite_select_query_t* query, char* column, char* op, char* raw_value) {
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 	sprintf(query->where, "%s AND %s %s %s", query->where, column, op, raw_value);
@@ -63,11 +63,11 @@ char* select_query_to_str(sqlite_select_query_t* query) {
 	int size;
 	char* query_str;
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return NULL;
 	}
 	if (query->table == NULL) {
-		errno = NO_TABLE;
+		errno = ERR_NO_TABLE;
 		return NULL;
 	}
 	if (query->atributes[0] == NULL)

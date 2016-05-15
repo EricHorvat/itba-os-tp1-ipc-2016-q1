@@ -15,6 +15,7 @@ bool isConnectionClosed(connection_t * conn);
 #define ERR_WRONG_ARGUMENTS_COUNT 103
 #define ERR_CONNECTION_NOT_LOGGED 104
 #define ERR_MISUSE_ARGUMENT 105
+#define ERR_BAD_ADDRESS 106
 
 
 #endif

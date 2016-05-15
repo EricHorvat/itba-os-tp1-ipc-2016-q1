@@ -110,12 +110,12 @@ int cmd_parse(connection_t* conn, char* cmd) {
 
 static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
 
-	int conn_error = -4;
+	int conn_error;
 
 	conn->server_addr = NEW(comm_addr_t);
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
-		return 0;
+		return COMMAND_OK;
 
 	if (isConnectionOpen(conn)) {
 
@@ -129,8 +129,8 @@ static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv
 		return ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
-	if (address_from_url(argv[0], conn->server_addr)) {
-		return 5;
+	if (address_from_url(argv[0], conn->server_addr) != ADDRESS_OK) {
+		return ERR_BAD_ADDRESS;
 	}
 
 	if ((conn_error = connection_open(conn) != 0)) {
@@ -152,16 +152,19 @@ static int cmd_sendi(connection_t* conn, client_command_info_t* info, char** arg
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg="Connection not opened";
+		return err->code=ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return ERR_WRONG_ARGUMENTS_COUNT;
+		err->msg = "More or less arguments";
+		return err->code=ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	INFO("sending %s", argv[0]);
 
@@ -203,18 +206,22 @@ static int cmd_sends(connection_t* conn, client_command_info_t* info, char** arg
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg="Connection not opened";
+		return err->code=ERR_CONNECTION_NOT_OPEN;
+	
 	}
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return ERR_WRONG_ARGUMENTS_COUNT;
+		err->msg = "More or less arguments";
+		return err->code=ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
 
 	INFO("sending %s", argv[0]);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	send_string(argv[0], conn, err);
 
@@ -251,14 +258,24 @@ static int cmd_sendd(connection_t* conn, client_command_info_t* info, char** arg
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return COMMAND_OK;
 
+	
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
+		err->msg="Connection not opened";
+		return err->code=ERR_CONNECTION_NOT_OPEN;
+	
+	}
 
-		return ERR_CONNECTION_NOT_OPEN;
+	if (argc != 1) {
+		ERROR("Correct use: %s", info->correct_use);
+		err->msg = "More or less arguments";
+		return err->code=ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	send_int(atof(argv[0]), conn, err);
 
@@ -295,23 +312,26 @@ static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv,
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg="Connection not opened";
+		return err->code=ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("Please login first");
-
-		return ERR_CONNECTION_NOT_LOGGED;
+		err->msg = "Not logged";
+		return err->code = ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	cmd = NEW(command_get_t);
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10000;
+		err->msg = "More or less arguments";
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	cmd->path = argv[0];
@@ -353,23 +373,26 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("Please login first");
-
+		err->msg = "Not logged";
 		return ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	cmd = NEW(command_post_t);
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc != 2) {
 
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg="More or less arguments";
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
@@ -379,6 +402,7 @@ static int cmd_post(connection_t* conn, client_command_info_t* info, char** argv
 	{
 		if(errno = ERR_FILE_NOT_OPENED){
 			ERROR("Cant open file");
+			err->msg="Can\'t open file";
 		}
 		return err->code = errno;
 	}
@@ -421,22 +445,26 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
 	}
 
 	cmd       = NEW(command_login_t);
 	cmd->user = NEW(user_t);
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc != 2) {
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg = "More or less arguments";
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	if (logged) {
 		WARN("You are already logged");
+		err->msg="Already logged";
 		return ERR_ALREADY_DONE;
 	}
 
@@ -474,6 +502,8 @@ static int cmd_logout(connection_t* conn, client_command_info_t* info, char** ar
 	parse_result_t* presult;
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return COMMAND_OK;
@@ -481,18 +511,20 @@ static int cmd_logout(connection_t* conn, client_command_info_t* info, char** ar
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("You have to be logged to logout");
-
-		return ERR_CONNECTION_NOT_LOGGED;
+		err->msg = "Not logged";
+		return err->code = ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	if (argc != 0) {
 		ERROR("Correct use: %s", info->correct_use);
-		return err->code = 10002;
+		err->msg="More or less arguments";
+		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
 	send_cmd_logout(conn, err);
@@ -528,6 +560,8 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 	err       = NEW(comm_error_t);
 	cmd       = NEW(command_new_user_t);
 	cmd->user = NEW(user_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return COMMAND_OK;
@@ -535,16 +569,19 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (!logged) {
 		WARN("You have to be logged");
-		return ERR_CONNECTION_NOT_LOGGED;
+		err->msg = "Not logged";
+		return err->code = ERR_CONNECTION_NOT_LOGGED;
 	}
 
 	if (argc < 2 || argc > 3) {
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg = "More or less arguments";
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
@@ -555,6 +592,7 @@ static int cmd_new_user(connection_t* conn, client_command_info_t* info, char** 
 		cmd->user->admin = yes;
 	} else {
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg="Misuse argument";
 		return err->code = ERR_MISUSE_ARGUMENT;
 	}
 
@@ -593,6 +631,8 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 	comm_error_t* err;
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return COMMAND_OK;
@@ -600,20 +640,21 @@ static int cmd_close(connection_t* conn, client_command_info_t* info, char** arg
 	if (!isConnectionOpen(conn)) {
 
 		WARN("Please open connection first");
-		return ERR_CONNECTION_NOT_OPEN;
+		err->msg = "Connection not opened";
+		return err->code = ERR_CONNECTION_NOT_OPEN;
 	}
 
 	if (logged) {
 		WARN("You have not to be logged to close");
-		return ERR_ALREADY_DONE;
+		err->msg = "Have not to be logged to close connection";
+		return err->code = ERR_ALREADY_DONE;
 	}
 
 	if (argc != 0) {
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg = "More or less arguments";
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
-
-	err = NEW(comm_error_t);
 
 	send_cmd_close(conn, err);  //-> should set CONNECTION_STATE_CLOSED, close only one fifo and exit
 
@@ -647,12 +688,15 @@ static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv
 	comm_error_t* err;
 
 	err = NEW(comm_error_t);
+	err->msg="Sending command";
+	err->code=COMMAND_OK;
 
 	if (argc == 1 && show_help_for_command(argv[0], info))
 		return COMMAND_OK;
 
 	if (argc != 1) {
 		ERROR("Correct use: %s", info->correct_use);
+		err->msg = "More or less arguments";
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 

@@ -144,5 +144,5 @@ int file_from_row_data(char* path, char* data, size_t size) {
 	INFO("ENDING");
 	fclose(file);
 
-	return NO_FILE_ERROR;
+	return FILE_OK;
 }

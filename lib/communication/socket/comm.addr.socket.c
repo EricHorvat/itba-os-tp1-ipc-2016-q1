@@ -16,7 +16,7 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 
 	if (address == nil) {
 		fprintf(stderr, "addr is nil\n");
-		return -1;
+		return ADDRESS_NULL;
 	}
 
 	address->valid = yes;
@@ -84,5 +84,5 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 
 	address->extra->port = atoi(start);
 	
-	return 0;
+	return ADDRESS_OK;
 }

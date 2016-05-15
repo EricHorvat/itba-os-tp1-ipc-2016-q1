@@ -22,7 +22,7 @@ int create_update_query(sqlite_update_query_t* query) {
 
 int set_update_query_table(sqlite_update_query_t* query, char* table) {
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 	sprintf(query->table, "%s", table);
@@ -36,7 +36,7 @@ int set_update_query_value(sqlite_update_query_t* query, char* atribute, char* v
 	int i = 0;
 
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
@@ -58,7 +58,7 @@ int set_update_query_value(sqlite_update_query_t* query, char* atribute, char* v
 
 int set_update_query_where(sqlite_update_query_t* query, char* where) {
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
@@ -73,15 +73,15 @@ char* update_query_to_str(sqlite_update_query_t* query) {
 	char* query_str;
 
 	if (query == NULL) {
-		errno = NULL_QUERY;
+		errno = ERR_NULL_QUERY;
 		return NULL;
 	}
 	if (query->table == NULL) {
-		errno = NO_TABLE;
+		errno = ERR_NO_TABLE;
 		return NULL;
 	}
 	if (query->atributes[0] == NULL) {
-		errno = NO_ATRIBUTE_NOR_VALUE;
+		errno = ERR_NO_ATRIBUTE_NOR_VALUE;
 		return NULL;
 	}
 

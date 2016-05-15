@@ -79,7 +79,7 @@ static void* server_responder(void* data) {
 
 	} else if (strcmp(result->kind, "command.post") == 0) {
 
-		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.get_cmd->path);
+		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.post_cmd->dest);
 		process_post_cmd(req->connection, result->data.post_cmd, err);
 
 	} else if (strcmp(result->kind, "command.login") == 0) {
@@ -212,7 +212,7 @@ static void listen_connections(server_config_t* config) {
 				if (error->code) {
 					ERROR("worker %d::received failed with code", getpid(), error->code);
 				}
-				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
+//				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 				if (current_thread == num_threads - 1) {
 					num_threads *= 2;
