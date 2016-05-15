@@ -15,5 +15,6 @@ typedef struct  {
 #define STATUS_WARN 3
 #define STATUS_ERROR 1
 #define STATUS_IDLE 4
+#define STATUS_DOWN -1
 
 #endif // __MONITOR_H__

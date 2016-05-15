@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include <monitor.h>
+#include <utils.h>
 
 static sem_t * sem_id;
 
@@ -60,55 +61,41 @@ void signal_callback_handler(int signum) {
 int main(int argc, char *argv[]) {
 	int shmfd;
 	int vol, cur;
-	int shared_seg_size = (1 * sizeof(shared_data_t));   /* want shared segment capable of storing 1 message */
-	shared_data_t *shared_msg;      /* the shared segment, and head of the messages list */
-
-	worker_t** workers = (worker_t**)malloc( 100 * sizeof(worker_t*) );
-
-	// memset(workers, NULL, 20 * sizeof(worker_t*));
-
-	signal(SIGINT, signal_callback_handler);
-
-	/* creating the shared memory object    --  shm_open()  */
-	shmfd = shm_open(SHMOBJ_PATH, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG);
-	if (shmfd < 0) {
-		perror("In shm_open()");
-		exit(1);
-	}
-
-	fprintf(stderr, "Created shared memory object %s\n", SHMOBJ_PATH);
-
-	/* adjusting mapped file size (make room for the whole segment to map)      --  ftruncate() */
-	ftruncate(shmfd, shared_seg_size);
-
-	/**
-	 * Semaphore open
-	 */
-	sem_id = sem_open(SEM_PATH, O_CREAT, S_IRUSR | S_IWUSR, 1);
-
-	/* requesting the shared segment    --  mmap() */
-	shared_msg = (shared_data_t *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
-	if (shared_msg == NULL) {
-		perror("In mmap()");
-		exit(1);
-	}
-
-	fprintf(stderr, "Shared memory segment allocated correctly (%d bytes).\n", shared_seg_size);
-
-	vol = 10;
-	cur = 0;
+	int shared_seg_size = (1 * sizeof(shared_data_t));
+	shared_data_t *shared_msg;
+	worker_t** workers;
 
 	int current_worker = -1;
 	int current_thread = -1;
-
 	int total_workers = 0;
-
-	worker_t *curr_worker;
-	thread_t *curr_thread;
-
 	int current_status = -1;
+	int k = 1;
+	int i = 0;
+	int j = 0;
 
-	WINDOW *win = initscr();
+	workers = (worker_t**)malloc( 100 * sizeof(worker_t*) );
+
+	signal(SIGINT, signal_callback_handler);
+
+	shmfd = shm_open(SHMOBJ_PATH, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG);
+	if (shmfd < 0) {
+		ERROR("shm_open()");
+		exit(1);
+	}
+
+	ftruncate(shmfd, shared_seg_size);
+
+	sem_id = sem_open(SEM_PATH, O_CREAT, S_IRUSR | S_IWUSR, 1);
+
+	shared_msg = (shared_data_t *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+	if (shared_msg == NULL) {
+		ERROR("mmap()");
+		exit(1);
+	}
+
+	
+
+	initscr();
 	noecho();
 	cbreak();
 	start_color();
@@ -118,9 +105,7 @@ int main(int argc, char *argv[]) {
 	init_pair(STATUS_IDLE, COLOR_CYAN, COLOR_BLACK);
 	init_pair(5, COLOR_WHITE, COLOR_BLACK);
 
-	int c;
-
-	int k = 1;
+	
 
 	shared_msg->worker = -1;
 	shared_msg->thread = -1;
@@ -128,23 +113,18 @@ int main(int argc, char *argv[]) {
 
 	while ( 1 ) {
 
-		if (shared_msg->worker == -1)
+		if (shared_msg->worker == -1) {
+			usleep(500);
 			continue;
+		}
 
-		
 		current_worker = shared_msg->worker;
 		current_thread = shared_msg->thread;
 		current_status = shared_msg->status;
 			
 		clear();
 		move(0,0);
-		sleep(1);
-
-		mvprintw( 0, 0, "%d %d %d", current_worker, current_thread, current_status);
-		refresh();
-
-		int i = 0;
-		int j = 0;
+		usleep(500)
 
 		for (i = 0; i < total_workers; i++) {
 			if (workers[i]->id == current_worker) {
@@ -166,8 +146,6 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (i == total_workers) {
-			mvprintw(0,20,"new: %d", i);
-			refresh();
 			workers[i] = (worker_t*)malloc(sizeof(worker_t));
 			workers[i]->total_threads = 0;
 			workers[i]->id = current_worker;
@@ -181,21 +159,23 @@ int main(int argc, char *argv[]) {
 			total_workers++;
 		}
 
-		j = 1;
-
+		j = 0;
 
 		for (i = 0; i < total_workers; i++) {
 
-			mvprintw(j, 0, "%d worker %d", j, workers[i]->id);
+			mvprintw(j, 0, "worker %d", workers[i]->id);
 
 			j++;
 			for (k = 0; k < workers[i]->total_threads; k++) {
 
-				attron(COLOR_PAIR(workers[i]->threads[k]->status));
-				mvprintw(j, 2, "thread %d:", j, workers[i]->threads[k]->id);
-				attroff(COLOR_PAIR(workers[i]->threads[k]->status)); 
-				refresh();
-				j++;
+				if (workers[i]->threads[k]->status) != STATUS_DOWN) {
+
+					attron(COLOR_PAIR(workers[i]->threads[k]->status));
+					mvprintw(j, 2, "thread %d:", workers[i]->threads[k]->id);
+					attroff(COLOR_PAIR(workers[i]->threads[k]->status)); 
+					refresh();
+					j++;
+				}
 			}
 
 		}

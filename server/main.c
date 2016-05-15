@@ -118,6 +118,8 @@ static void* server_responder(void* data) {
 		LOG_INFO(log_str, "worker %d::thread %ld::data sent successfully: (%s)", pid, self, err->msg);
 	}
 
+	post_status(pid, self, STATUS_DOWN);
+
 	return nil;
 }
 
@@ -262,7 +264,7 @@ static void listen_connections(server_config_t* config) {
 			//if(shutdown) {sendshoutdown()}
 
 			LOG_INFO(log_str, "worker %d::ending", getpid());
-
+			post_status(getpid(), 0, STATUS_DOWN);
 			exit(0);
 		}
 	}
