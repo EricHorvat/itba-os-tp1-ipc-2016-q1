@@ -7,7 +7,6 @@
 
 #include <utils.h>
 
-/*TO MARTIN, esto no lo hace write_one_by_one ?*/
 static void write_one_by_one_in_fd(char* str, int write_fd, int size) {
 	int written_bytes = 0;
 	do {
@@ -18,7 +17,7 @@ static void write_one_by_one_in_fd(char* str, int write_fd, int size) {
 static int callback(void* write_p, int argc, char** argv, char** azColName) {
 	int   write_pipe = *((int*)write_p);
 	int   i, n;
-	char* str = malloc(/*CAMBIAR*/ 2048 * sizeof(char));
+	char* str = malloc(MAX_QUERY_RESPONSE_LENGTH * sizeof(char));
 	str[0]    = '\0';
 	for (i = 0; i < argc; i++) {
 		if (strlen(str) == 0)
@@ -49,14 +48,14 @@ char* run_sqlite_query(sql_connection_t* conn, char* query_text) {
 
 	len = strlen(query_text);
 
-	asn_vector = malloc(8 /*CHANGE*/ * sizeof(char*));
+	asn_vector = malloc(MAX_COLUMNS * sizeof(char*));
 
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes, 1);
 	} while (written_bytes < len);
 	
 	do {
-		query_response = malloc(sizeof(char) * 2048 /*MAX_QUERY_RESPONSE*/);
+		query_response = malloc(sizeof(char) * MAX_QUERY_RESPONSE_LENGTH);
 		aux      = malloc(sizeof(char) * 2);
 		aux[1]         = '\0';
 		readd      = 0;
@@ -102,24 +101,24 @@ int run_delete_sqlite_query(sql_connection_t* conn, sqlite_delete_query_t* query
 
 int run_update_sqlite_query(sql_connection_t* conn, sqlite_update_query_t* query) {
 
-	char aux;
-	aux = run_sqlite_query(conn, update_query_to_str(query));
-	
+	char * aux;
+	aux = update_query_to_str(query);
+	aux = run_sqlite_query(conn, aux);
 	if(strcmp(aux,END_STR)!= 0)
 		return ERR_RUN_SQL_ERROR;
 	return SQL_OK;
 }
 
 char* to_fields_string(char** fields) {
-	/*ADDING VALUES*/
 	char* aux = malloc(sizeof(char) * MAX_QUERY_LENGTH);
-	int   i   = 0;
+	int   i   = 0, n=0;
 	while (fields[i] != NULL) {
 		if (i == 0)
-			sprintf(aux, "%s", fields[i]);
+			n = sprintf(aux, "%s", fields[i]);
 		else
-			sprintf(aux, "%s,%s", aux, fields[i]);
+			n = sprintf(aux, "%s,%s", aux, fields[i]);
 		i++;
+		aux[n]='\0';
 	}
 	return aux;
 }

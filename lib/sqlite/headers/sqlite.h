@@ -21,7 +21,7 @@
 
 #define NULL_STR "NULL"
 
-#define AFTER_LAST_ROW_STR "END;"
+#define MAX_QUERY_RESPONSE_LENGTH 2048
 
 /*ERRORS*/
 #define SQL_OK 0

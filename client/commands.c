@@ -743,6 +743,8 @@ static int cmd_change_pass(connection_t* conn, client_command_info_t* info, char
 		return err->code = ERR_WRONG_ARGUMENTS_COUNT;
 	}
 
+	cmd->pass=strdup(argv[0]);
+
 	send_cmd_change_pass(cmd, conn, err);
 
 	if (err->code) {

@@ -178,17 +178,27 @@ bool update_pass_in_db(fs_user_t * user, char* new_pass){
 	sqlite_update_query_t* query = malloc(sizeof(sqlite_update_query_t));
 	
 	char* pass_str;
-	
+	char * id_str;
+	printf("1\n");
 	create_update_query(query);
+	printf("2\n");
 	set_update_query_table(query, "users");
+	printf("3\n");
 	
 	pass_str = malloc((1 + strlen(new_pass) + 2) * sizeof(char));
+	id_str = malloc((6) * sizeof(char));
 	sprintf(pass_str, "\"%s\"", new_pass);
+	sprintf(id_str, "%d", user->id);
+	printf("4\n",new_pass,pass_str);
 
+	printf("5\n");
 	set_update_query_value(query, "password", pass_str);
-	set_update_query_where(query, "user_id","=",user->id);
+	printf("6\n");
+	set_update_query_where(query, "user_id","=",id_str);
 
+	printf("7\n");
 	run_update_sqlite_query(sql_connection, query);
+	printf("8\n");
 
 	return EXPECTED_RESPONSE;
 }

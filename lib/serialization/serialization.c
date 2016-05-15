@@ -288,7 +288,7 @@ parse_result_t* parse_encoded(const char* json) {
 
 		change_pass_cmd = NEW(command_change_pass_t);
 
-		json_object_object_get_ex(main_object, "pass", &aux_object);
+		json_object_object_get_ex(main_object, "password", &aux_object);
 		str_value     = json_object_get_string(aux_object);
 		change_pass_cmd->pass = (char*)malloc(strlen(str_value) + 1);
 		strcpy(change_pass_cmd->pass, str_value);

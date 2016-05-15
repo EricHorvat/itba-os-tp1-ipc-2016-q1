@@ -103,7 +103,7 @@ static void* server_responder(void* data) {
 		process_new_user_cmd(req->connection, result->data.new_user_cmd, err);
 	} else if (strcmp(result->kind, "command.change_pass") == 0) {
 
-		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
+		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, "PASSWORD");
 		process_change_pass_cmd(req->connection, result->data.change_pass_cmd, err);
 	}
 	pthread_mutex_unlock(&lock);
@@ -215,7 +215,7 @@ static void listen_connections(server_config_t* config) {
 				if (error->code) {
 					ERROR("worker %d::received failed with code", getpid(), error->code);
 				}
-//				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
+				LOG_INFO(log_str, "worker %d::%s says %s", getpid(), connection->client_addr->host, command);
 
 				if (current_thread == num_threads - 1) {
 					num_threads *= 2;
