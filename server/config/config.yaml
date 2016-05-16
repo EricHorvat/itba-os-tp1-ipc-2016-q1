@@ -1,5 +1,0 @@
-# config/public.yaml
-
-connections:
-  fifo:  'connections.fifo'
-  port:  3000
