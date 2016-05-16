@@ -59,7 +59,7 @@ typedef char* string;
 
 #else
 
-#define LOG(msg, ...) printf(msg, __VA_ARGS__)
+#define LOG(msg, ...) printf(msg "\n", ##__VA_ARGS__)
 #define INFO(msg, ...) printf(ANSI_COLOR_CYAN msg ANSI_COLOR_RESET "\n", ##__VA_ARGS__)
 #define WARN(msg, ...) printf(ANSI_COLOR_YELLOW msg ANSI_COLOR_RESET "\n", ##__VA_ARGS__)
 #define ERROR(msg, ...) fprintf(stderr, ANSI_COLOR_RED msg ANSI_COLOR_RESET "\n", ##__VA_ARGS__)

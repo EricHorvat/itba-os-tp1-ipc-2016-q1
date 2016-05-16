@@ -151,25 +151,21 @@ static void listen_connections(server_config_t* config) {
 	connection              = NEW(connection_t);
 	connection->server_addr = NEW(comm_addr_t);
 
-#ifdef __FIFO__
-	addr = malloc((addr_len = 7 + strlen(config->server_name) + 1));
-	memset(addr, ZERO, addr_len);
-	sprintf(addr, "fifo://%s", config->server_name);
-	if (address_from_url(addr, connection->server_addr) != 0) {
-		LOG_ERROR(log_str, "Invalid Address");
-		post_status(0, 0, STATUS_ERROR);
-		abort();
-	}
-#else
 	addr = malloc((addr_len = 7 + strlen(config->server_name) + floorf(log10(config->port)) + 1 + 1));
+#ifdef __FIFO__
+	sprintf(addr, "fifo://%s", config->server_name);
+#else
+	sprintf(addr, "socket://%s:%d", config->server_name, config->port);
+#endif
+
 	memset(addr, ZERO, addr_len);
-	sprintf(addr, "fifo://%s:%d", config->server_name, config->port);
+	
 	if (address_from_url(addr, connection->server_addr) != 0) {
 		LOG_ERROR(log_str, "Invalid Address");
 		post_status(0, 0, STATUS_ERROR);
 		abort();
 	}
-#endif
+
 	threads = (pthread_t**)malloc(num_threads * sizeof(pthread_t*));
 
 	LOG_INFO(log_str, "master::listening on name: %s", connection->server_addr->host);

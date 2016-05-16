@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <file_utils.h>
 #include <errno.h>
+#include <pthread.h>
 
 typedef struct {
 	char* correct_use;

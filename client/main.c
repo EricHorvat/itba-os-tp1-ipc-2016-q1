@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
 	connection_t* connection;
 
 	comm_addr_error_t addr_error;
-	char *            client_url, *server_url;
+	char *            client_url;
 
 	char* shell_buffer;
 	int   shell_index = 0;
@@ -41,9 +41,11 @@ int main(int argc, char** argv) {
 		client_url_len = sprintf(client_args->client_name, "anon%d", (rnd = getrnd(1000, 10000)));
 		client_args->client_name[client_url_len] = 0;
 	}
-	if (!client_args->protocol) {
-		client_args->protocol = DEFAULT_PROTOCOL;
-	}
+#ifdef __FIFO__
+	client_args->protocol = "fifo";
+#else
+	client_args->protocol = "socket";
+#endif
 
 	// alocate url
 	client_url = (char*)malloc(strlen(client_args->protocol) + 3 + strlen(client_args->client_name) + 1 + 5);
@@ -56,24 +58,37 @@ int main(int argc, char** argv) {
 		ERROR("Address failed");
 	}
 
-	if (client_args->server) {
-		connection->server_addr    = NEW(comm_addr_t);
-		server_url                 = (char*)malloc(strlen(client_args->protocol) + 3 + strlen(client_args->server));
-		client_url_len             = sprintf(server_url, "%s://%s", client_args->protocol, client_args->server);
-		server_url[client_url_len] = 0;
-	}
-
 	// <-- log
-	printf("+--------------------------------------------------------+\n");
-	printf("| client name\t\t | server\t | protocol\t |\n");
-	printf("+--------------------------------------------------------+\n");
-	printf("| %s\t\t | %s\t | %s\t\t |\n", connection->client_addr->host, client_args->server, connection->client_addr->protocol);
-	printf("+--------------------------------------------------------+\n");
+	SUCCESS("Welcome to:");
+	ERROR("\n_____________________    _________________    .______________________ \n"
+"\\__    ___/\\______   \\  /   _____/\\_____  \\   |   \\______   \\_   ___ \\ \n"
+"  |    |    |     ___/  \\_____  \\  /   |   \\  |   ||     ___/    \\  \\/ \n"
+"  |    |    |    |      /        \\/    |    \\ |   ||    |   \\     \\____\n"
+"  |____|    |____|     /_______  /\\_______  / |___||____|    \\______  /\n"
+"                               \\/         \\/                        \\/ \n"
+"___________.__.__             _________                                \n"
+"\\_   _____/|__|  |   ____    /   _____/ ______________  __ ___________ \n"
+" |    __)  |  |  | _/ __ \\   \\_____  \\_/ __ \\_  __ \\  \\/ // __ \\_  __ \\\n"
+" |     \\   |  |  |_\\  ___/   /        \\  ___/|  | \\/\\   /\\  ___/|  | \\/\n"
+" \\___  /   |__|____/\\___  > /_______  /\\___  >__|    \\_/  \\___  >__|   \n"
+"     \\/                 \\/          \\/     \\/                 \\/ \n");
+#ifdef __FIFO__
+	LOG("This is a FIFO based client");
+	INFO("URl Schema is fifo://<server-name>");
+#else
+	LOG("This is a SOCKET based client");
+	INFO("URl Schema is socket://<server-name>:<port>");
+#endif
+	
+	INFO("You're username is %s:", client_args->client_name);
+
+	INFO("Feel free to use the help command.");
 	// <!-- end log
 
 	shell_buffer = (char*)malloc(2048);
 	memset(shell_buffer, ZERO, 2048);
-	/**/
+	
+
 	while (!is_connection_closed(connection)) {
 
 		printf("> ");

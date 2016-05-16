@@ -24,6 +24,9 @@ comm_addr_error_t address_from_url(char* url, comm_addr_t* address) {
 	memset(address->url, ZERO, strlen(url) + 1);
 	strcpy(address->url, url);
 
+	if (*offset != 's')
+		return ADDRESS_INVALID_PROTOCOL;
+
 	while (*offset != COLON && *offset != NEWLINE && *offset != EOF && *offset != ZERO) {
 		++offset;
 		++index;
