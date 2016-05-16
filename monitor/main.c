@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 			
 		clear();
 		move(0,0);
-		usleep(500);
+		usleep(1500);
 
 		for (i = 0; i < total_workers; i++) {
 			if (workers[i]->id == current_worker) {

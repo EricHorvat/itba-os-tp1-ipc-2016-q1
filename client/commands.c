@@ -46,19 +46,19 @@ static void initialize_commands(void) {
 
 	commands = (client_command_t**)malloc(50 * sizeof(client_command_t*));
 
-	commands[i++] = new_command(strdup("open"), "open url", "CAMopen help", &cmd_open);
-	commands[i++] = new_command("close", "close", "CAMclose help", &cmd_close);
-	commands[i++] = new_command("sendi", "sendi int", "CAMsendi help", &cmd_sendi);
-	commands[i++] = new_command("sendd", "sendd double", "CAMsendd help", &cmd_sendd);
-	commands[i++] = new_command("sends", "sends string", "CAMsends help", &cmd_sends);
-	commands[i++] = new_command("help", "help command", "CAMhelp help", &cmd_help);
-	commands[i++] = new_command("get", "get alias", "CAMget help", &cmd_get);
-	commands[i++] = new_command("post", "post alias file", "CAMpost help", &cmd_post);
-	commands[i++] = new_command("login", "login username password", "CAMlogin help", &cmd_login);
-	commands[i++] = new_command("logout", "logout", "CAMlogout help", &cmd_logout);
-	commands[i++] = new_command("commands", "commands", "CAMcommands help", &cmd_commands);
-	commands[i++] = new_command("newuser", "newuser name yes/no [pass]", "CAMnewuser help", &cmd_new_user);
-	commands[i++] = new_command("ch_password", "ch_password pass", "CAMch_password help", &cmd_change_pass);
+	commands[i++] = new_command(strdup("open"), "open url", "Opens connection with the server\nCorrect use: open url", &cmd_open);
+	commands[i++] = new_command("close", "close", "Closes connection\nCorrect use: close", &cmd_close);
+	commands[i++] = new_command("sendi", "sendi int", "Sends int to server and returns the double\nCorrect use: sendi int", &cmd_sendi);
+	commands[i++] = new_command("sendd", "sendd double", "Sends double to server and returns the double\nCorrect use: sendd double", &cmd_sendd);
+	commands[i++] = new_command("sends", "sends string", "Sends string to server and returns it without the first two chars\nCorrect use: sends string", &cmd_sends);
+	commands[i++] = new_command("help", "help command", "Shows help of the command\nCorrect use: help command OR command help", &cmd_help);
+	commands[i++] = new_command("get", "get alias", "Gets your file with the alias indicated\nCorrect use: get alias", &cmd_get);
+	commands[i++] = new_command("post", "post alias file", "Posts file in the system\nCorrect use: post alias file", &cmd_post);
+	commands[i++] = new_command("login", "login username password", "Logs in the server\nCorrect use: login username password", &cmd_login);
+	commands[i++] = new_command("logout", "logout", "Logs out of the system\nCorrect use: logout", &cmd_logout);
+	commands[i++] = new_command("commands", "commands", "Shows all the commands\nCorrect use: commands", &cmd_commands);
+	commands[i++] = new_command("newuser", "newuser name yes/no [pass]", "Creates a new user, you must have root permission\nCorrect use: newuser name yes/no [pass]", &cmd_new_user);
+	commands[i++] = new_command("ch_pass", "ch_pass password", "Changes your password\nCorrect use: ch_pass password", &cmd_change_pass);
 	commands[i]   = NULL;
 }
 
@@ -467,7 +467,7 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 	if (logged) {
 		WARN("You are already logged");
 		err->msg="Already logged";
-		return ERR_ALREADY_DONE;
+		return err->code = ERR_ALREADY_DONE;
 	}
 
 	cmd->user->username = strdup(argv[0]);
@@ -493,6 +493,11 @@ static int cmd_login(connection_t* conn, client_command_info_t* info, char** arg
 
 	if (strcmp(presult->kind, "data") == 0) {
 		SUCCESS("response: %s", (char*)presult->data.data);
+		if (strcmp("Login failed",(char*)presult->data.data) == 0)
+		{
+			err->msg = "Login failed";
+			return err->code= ERR_LOGIN_FAILED; 
+		}
 	}
 	logged = yes;
 	return COMMAND_OK;

@@ -12,6 +12,7 @@ int cmd_parse(connection_t *, char*);
 #define ERR_CONNECTION_NOT_LOGGED 104
 #define ERR_MISUSE_ARGUMENT 105
 #define ERR_BAD_ADDRESS 106
+#define ERR_LOGIN_FAILED 107
 #define COMMAND_CLOSE_OK 10000
 
 
