@@ -22,8 +22,6 @@
 #include <helpers/sql_helpers.h>
 #include <helpers/monitor_helpers.h>
 
-#define MIN_THREADS 10
-
 typedef struct {
 	connection_t* connection;
 	char*         input;
@@ -140,25 +138,27 @@ static void listen_connections(server_config_t* config) {
 
 	comm_error_t* error;
 
-	size_t num_threads = MIN_THREADS;
+	size_t num_threads, max_threads;
+	num_threads = config->min_threads;
+	max_threads = config->max_threads;
 
 	log_str = (char*)malloc(MAX_LOG_LENGTH);
 
 	sql_connection = NEW(sql_connection_t);
+	sql_connection->db_file = strdup(config->db_file);
 
 	open_sql_conn(sql_connection);
 
 	connection              = NEW(connection_t);
 	connection->server_addr = NEW(comm_addr_t);
 
-	addr = malloc((addr_len = 7 + strlen(config->server_name) + floorf(log10(config->port)) + 1 + 1));
+	addr = malloc((addr_len = 10 + strlen(config->server_name) + floorf(log10(config->port)) + 1 + 1));
+	memset(addr, ZERO, addr_len);
 #ifdef __FIFO__
 	sprintf(addr, "fifo://%s", config->server_name);
 #else
 	sprintf(addr, "socket://%s:%d", config->server_name, config->port);
 #endif
-
-	memset(addr, ZERO, addr_len);
 	
 	if (address_from_url(addr, connection->server_addr) != 0) {
 		LOG_ERROR(log_str, "Invalid Address");
@@ -235,6 +235,10 @@ static void listen_connections(server_config_t* config) {
 
 				if (current_thread == num_threads - 1) {
 					num_threads *= 2;
+					if (num_threads > max_threads) {
+						send_data("Server maxed capacity", strlen("Server maxed capacity"), connection, error);
+						break;
+					}
 					threads = realloc(threads, num_threads * sizeof(pthread_t*));
 				}
 

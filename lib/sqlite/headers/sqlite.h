@@ -34,11 +34,12 @@
 /*END ERRORS */
 
 typedef struct {
-	int read_pipe;
-	int write_pipe;
+	int   read_pipe;
+	int   write_pipe;
+	char* db_file;
 } sql_connection_t;
 
-int init_sqlite_server(int read_pipe, int write_pipe);
+int init_sqlite_server(char*, int read_pipe, int write_pipe);
 char* run_sqlite_query(sql_connection_t* conn, char* query_text);
 int run_insert_sqlite_query(sql_connection_t* conn, sqlite_insert_query_t* query);
 char* run_select_sqlite_query(sql_connection_t* conn, sqlite_select_query_t* query);

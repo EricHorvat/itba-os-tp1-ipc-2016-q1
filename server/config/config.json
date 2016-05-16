@@ -1,4 +1,7 @@
 {
 	"server_name": "google",
-	"port": 7978
+	"port": 7978,
+	"db": "./files.db",
+	"min_threads": 10,
+	"max_threads": 100
 }

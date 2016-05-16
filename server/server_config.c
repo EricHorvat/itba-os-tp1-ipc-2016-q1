@@ -25,6 +25,15 @@ int load_configuration(char* path, server_config_t* config) {
 	json_object_object_get_ex(main_object, "port", &aux_object);
 	config->port = json_object_get_int(aux_object);
 
+	json_object_object_get_ex(main_object, "db", &aux_object);
+	config->db_file = strdup(json_object_get_string(aux_object));
+
+	json_object_object_get_ex(main_object, "min_threads", &aux_object);
+	config->min_threads = (size_t)json_object_get_int(aux_object);
+
+	json_object_object_get_ex(main_object, "max_threads", &aux_object);
+	config->max_threads = (size_t)json_object_get_int(aux_object);
+
 	return 0;
 }
 

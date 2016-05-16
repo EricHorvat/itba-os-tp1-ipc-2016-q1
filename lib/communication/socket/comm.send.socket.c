@@ -49,8 +49,8 @@ static void* data_listener(void*);
 
 **/
 
-pthread_mutex_t lock;
-bool            mutex_init = no;
+static pthread_mutex_t lock;
+static bool            mutex_init = no;
 
 static void* data_listener(void* data) {
 

@@ -4,8 +4,11 @@
 #include <sqlite.h>
 #include <errno.h>
 #include <unistd.h>
-
+#include <pthread.h>
 #include <utils.h>
+
+static pthread_mutex_t lock;
+static bool            mutex_init = no;
 
 static void write_one_by_one_in_fd(char* str, int write_fd, int size) {
 	int written_bytes = 0;
@@ -49,10 +52,11 @@ char* run_sqlite_query(sql_connection_t* conn, char* query_text) {
 	len = strlen(query_text);
 
 	asn_vector = malloc(MAX_COLUMNS * sizeof(char*));
-
+	pthread_mutex_lock(&lock);
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes, 1);
 	} while (written_bytes < len);
+	pthread_mutex_unlock(&lock);
 
 	do {
 		query_response = malloc(sizeof(char) * MAX_QUERY_RESPONSE_LENGTH);
@@ -132,6 +136,14 @@ int open_sql_conn(sql_connection_t* conn) {
 		return -1;
 	}
 
+	if (!mutex_init) {
+		if (pthread_mutex_init(&lock, NULL) != 0) {
+			ERROR("mutex init failed");
+			return -2;
+		}
+		mutex_init = yes;
+	}
+
 	if ((child_pid = fork()) < 0) {
 		errno = ERR_CANT_CREATE_SQL_SERVER;
 		return -1;
@@ -139,7 +151,7 @@ int open_sql_conn(sql_connection_t* conn) {
 
 		close(fd[0][0]);
 		close(fd[1][1]);
-		init_sqlite_server(fd[1][0], fd[0][1]);
+		init_sqlite_server(conn->db_file, fd[1][0], fd[0][1]);
 	} else {
 		close(fd[0][1]);
 		close(fd[1][0]);
@@ -158,7 +170,7 @@ int close_sql_conn(sql_connection_t* conn) {
 	return SQL_OK;
 }
 
-int init_sqlite_server(int read_pipe, int write_pipe) {
+int init_sqlite_server(char* db_file, int read_pipe, int write_pipe) {
 
 	sqlite3* db;
 	char*    errMsg;
@@ -167,7 +179,7 @@ int init_sqlite_server(int read_pipe, int write_pipe) {
 	char*    aux;
 	int      q = 0, n;
 
-	if (sqlite3_open("./files.db", &db)) {
+	if (sqlite3_open(db_file, &db)) {
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 		sqlite3_close(db);
 		exit(-1);
@@ -195,7 +207,9 @@ int init_sqlite_server(int read_pipe, int write_pipe) {
 			}
 			aux = malloc(sizeof(char) * strlen(END_STR) + 2);
 			sprintf(aux, "%s\n", END_STR);
+			pthread_mutex_lock(&lock);
 			write_one_by_one_in_fd(aux, write_pipe, strlen(aux));
+			pthread_mutex_unlock(&lock);
 		} else {
 			run = 0;
 		}
