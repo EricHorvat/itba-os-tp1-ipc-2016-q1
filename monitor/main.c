@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include <monitor.h>
-#include <utils.h>
+// #include <utils.h>
 
 static sem_t * sem_id;
 
@@ -27,9 +27,9 @@ typedef struct {
 	thread_t ** threads;
 } worker_t;
 
-#define REFRESH_INTERVAL 1
+static void signal_callback_handler(int signum);
 
-void signal_callback_handler(int signum) {
+static void signal_callback_handler(int signum) {
 
 	/**
 	 * Semaphore unlink: Remove a named semaphore  from the system.
@@ -60,7 +60,6 @@ void signal_callback_handler(int signum) {
 
 int main(int argc, char *argv[]) {
 	int shmfd;
-	int vol, cur;
 	int shared_seg_size = (1 * sizeof(shared_data_t));
 	shared_data_t *shared_msg;
 	worker_t** workers;
@@ -79,7 +78,7 @@ int main(int argc, char *argv[]) {
 
 	shmfd = shm_open(SHMOBJ_PATH, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG);
 	if (shmfd < 0) {
-		ERROR("shm_open()");
+		perror("shm_open()");
 		exit(1);
 	}
 
@@ -89,7 +88,7 @@ int main(int argc, char *argv[]) {
 
 	shared_msg = (shared_data_t *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
 	if (shared_msg == NULL) {
-		ERROR("mmap()");
+		perror("mmap()");
 		exit(1);
 	}
 
@@ -124,7 +123,7 @@ int main(int argc, char *argv[]) {
 			
 		clear();
 		move(0,0);
-		usleep(500)
+		usleep(500);
 
 		for (i = 0; i < total_workers; i++) {
 			if (workers[i]->id == current_worker) {
@@ -168,7 +167,7 @@ int main(int argc, char *argv[]) {
 			j++;
 			for (k = 0; k < workers[i]->total_threads; k++) {
 
-				if (workers[i]->threads[k]->status) != STATUS_DOWN) {
+				if (workers[i]->threads[k]->status != STATUS_DOWN) {
 
 					attron(COLOR_PAIR(workers[i]->threads[k]->status));
 					mvprintw(j, 2, "thread %d:", workers[i]->threads[k]->id);
