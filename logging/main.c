@@ -42,7 +42,6 @@ int main(void) {
 				ERROR("could not open log file for append");
 			fputs(buff, log_file);
 			fclose(log_file);
-
 		}
 	}
 

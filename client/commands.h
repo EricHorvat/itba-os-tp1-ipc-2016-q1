@@ -3,7 +3,7 @@
 
 #include <serialization.h>
 
-int cmd_parse(connection_t *, char*);
+int cmd_parse(connection_t*, char*);
 #define COMMAND_OK 0
 #define ERR_COMMAND_NOT_FOUND 100
 #define ERR_ALREADY_DONE 101
@@ -14,6 +14,5 @@ int cmd_parse(connection_t *, char*);
 #define ERR_BAD_ADDRESS 106
 #define ERR_LOGIN_FAILED 107
 #define COMMAND_CLOSE_OK 10000
-
 
 #endif

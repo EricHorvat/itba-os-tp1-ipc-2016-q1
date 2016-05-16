@@ -10,65 +10,60 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-// https://gist.github.com/jbenet/1087739
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
-
+#include <math.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-
 #include <file_utils.h>
 #include <utils.h>
-#include <comm.fifo.h>
+#include <comm.socket.h>
 
 typedef struct {
 	comm_callback_t cb;
-	comm_addr_t* origin;
-	comm_addr_t* endpoint;
+	comm_addr_t*    origin;
+	comm_addr_t*    endpoint;
 } comm_thread_info_t;
 
 typedef struct {
-	int fd;
-	char *fifo;
-	bool success;
+	int   fd;
+	char* fifo;
+	bool  success;
 } comm_data_writer_ret_t;
 
 typedef void* (*pthread_func_t)(void* data);
 
+void comm_listen(connection_t* conn, comm_error_t* error) {
 
-void comm_listen(connection_t *conn, comm_error_t *error) {
+	int                 fd;
+	struct sockaddr_in* serv_addr;
 
-	int fd;
-	struct sockaddr_in * serv_addr;
-	
 	serv_addr = malloc(sizeof(struct sockaddr_in));
 	// memset(serv_addr,0,sizeof(struct sockaddr_in));
-	serv_addr->sin_family = AF_INET;
+	serv_addr->sin_family      = AF_INET;
 	serv_addr->sin_addr.s_addr = INADDR_ANY;
 
 	serv_addr->sin_port = conn->server_addr->extra->port;
 
-
-	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)	{
+	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		ERROR("cant create socket");
 		error->code = ERR_SOCKET_NOT_CREATED;
-		error->msg = "cant create socket";
+		error->msg  = "cant create socket";
 		return;
 	}
 
-	if ((bind(fd, (struct sockaddr *) serv_addr, sizeof(struct sockaddr_in))) < 0) {
+	if ((bind(fd, (struct sockaddr*)serv_addr, sizeof(struct sockaddr_in))) < 0) {
 		ERROR("cant bind socket");
 		error->code = ERR_SOCKET_NOT_BINDED;
-		error->msg = "cant binded socket";
+		error->msg  = "cant bind socket";
 		return;
 	}
-	if ((listen(fd,MAX_SOCKETS_CONNECTIONS)) < 0) {
+	if ((listen(fd, MAX_SOCKETS_CONNECTIONS)) < 0) {
 		ERROR("cant listen socket");
 		error->code = ERR_SOCKET_NOT_LISTENED;
-		error->msg = "cant listen socket";
+		error->msg  = "cant listen socket";
 		return;
 	}
 
@@ -76,26 +71,23 @@ void comm_listen(connection_t *conn, comm_error_t *error) {
 
 	INFO("fd: %d", fd);
 
-	/*HORIPILANTE**/
-	conn->connection_file = (char*)malloc( 10 );
+	conn->connection_file = (char*)malloc(floorf(log10(fd)) + 1);
 	bzero(conn->connection_file, 10);
 	sprintf(conn->connection_file, "%d", fd);
-	/**/
 
 	error->code = 0;
-	error->msg= "OK";
+	error->msg  = "OK";
 
 	conn->state = CONNECTION_STATE_IDLE;
 }
 
-void comm_accept(connection_t *conn, comm_error_t *error) {
+void comm_accept(connection_t* conn, comm_error_t* error) {
 
-	
-	int fd, read_bytes = 0, at;
-	char * buffer = (char*)malloc(BUFFER_LENGTH);
+	int   fd, read_bytes = 0, at;
+	char* buffer = (char*)malloc(BUFFER_LENGTH);
 
 	struct sockaddr_in client_addr;
-	socklen_t clilen;
+	socklen_t          clilen;
 
 	memset(buffer, ZERO, BUFFER_LENGTH);
 
@@ -106,17 +98,17 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	INFO("at: %d", at);
 
 	clilen = sizeof(client_addr);
-	if ((fd = accept(at/*FEO*/, (struct sockaddr *) &client_addr, &clilen)) < 0) {
+	if ((fd = accept(at /*FEO*/, (struct sockaddr*)&client_addr, &clilen)) < 0) {
 		ERROR("cant accept socket");
 		error->code = ERR_SOCKET_NOT_ACCEPTED;
-		error->msg = "cant accepted socket";
+		error->msg  = "cant accepted socket";
 	}
 	INFO("socket accepted");
 
 	// read one by one
 	do {
-		read(fd, buffer+read_bytes, 1);
-	} while ( *(buffer+read_bytes++) != '\0');
+		read(fd, buffer + read_bytes, 1);
+	} while (*(buffer + read_bytes++) != '\0');
 
 	INFO("buffer: %s", buffer);
 
@@ -125,7 +117,7 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	if (address_from_url(buffer, conn->client_addr)) {
 		ERROR("address cant be created");
 		error->code = ERR_SOCKET_ADDRESS_NOT_CREATED;
-		error->msg = "address cant be created";
+		error->msg  = "address cant be created";
 	}
 
 	// INFO("writing");
@@ -133,21 +125,19 @@ void comm_accept(connection_t *conn, comm_error_t *error) {
 	// INFO("ended writing");
 	conn->res_fd = fd;
 	conn->req_fd = fd;
-	conn->state = CONNECTION_STATE_OPEN;
+	conn->state  = CONNECTION_STATE_OPEN;
 
 	error->code = 0;
-	error->msg= "OK";
-
+	error->msg  = "OK";
 }
 
-char* comm_receive_data(connection_t *conn, comm_error_t *error) {
+char* comm_receive_data(connection_t* conn, comm_error_t* error) {
 
 	//char *request_fifo;
 	//size_t request_fifo_len = 0, read_bytes = 0;
 	//int fd;
 	// char *buffer;
 	// size_t read_bytes = 0;
-
 
 	// buffer = (char*)malloc(BUFFER_LENGTH);
 	// memset(buffer, ZERO, BUFFER_LENGTH);
@@ -166,10 +156,10 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	// error->msg= "OK";
 
 	// return buffer;
-	// 
-	
-	char *buffer, *boundary;
-	size_t read_bytes = 0;
+	//
+
+	char * buffer, *boundary;
+	size_t read_bytes   = 0;
 	size_t boundary_len = 0;
 
 	buffer = (char*)malloc(BUFFER_LENGTH);
@@ -180,31 +170,30 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 
 	// get boundary
 	do {
-		read(conn->res_fd, boundary+read_bytes, 1);
-	} while (*(boundary+read_bytes++) != '_');
+		read(conn->res_fd, boundary + read_bytes, 1);
+	} while (*(boundary + read_bytes++) != '_');
 
-	read(conn->res_fd, boundary+read_bytes, 1);
+	read(conn->res_fd, boundary + read_bytes, 1);
 
-	boundary_len = read_bytes+1;
+	boundary_len = read_bytes + 1;
 
 	read_bytes = 0;
 
 	do {
-		read(conn->res_fd, buffer+read_bytes, 1);
-		if (*(buffer+read_bytes) == ZERO) {
+		read(conn->res_fd, buffer + read_bytes, 1);
+		if (*(buffer + read_bytes) == ZERO) {
 			read_bytes++;
-			read(conn->res_fd, buffer+read_bytes, 1);
+			read(conn->res_fd, buffer + read_bytes, 1);
 		}
 		read_bytes++;
-	} while (read_bytes <= boundary_len || strcmp(buffer+(read_bytes-boundary_len), boundary) != 0);
+	} while (read_bytes <= boundary_len || strcmp(buffer + (read_bytes - boundary_len), boundary) != 0);
 
-	buffer[read_bytes-boundary_len] = '\0';
+	buffer[read_bytes - boundary_len] = '\0';
 
 	free(boundary);
 
 	error->code = NO_COMM_ERROR;
-	error->msg = "Receive Data Sucessful";
+	error->msg  = "Receive Data Sucessful";
 
 	return buffer;
-
 }

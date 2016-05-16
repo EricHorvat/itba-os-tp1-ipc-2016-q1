@@ -11,34 +11,6 @@
 
 #define DEFAULT_PROTOCOL "socket"
 
-static void response_handler(comm_error_t* err, connection_t* conn, char* response);
-
-static void response_handler(comm_error_t* err, connection_t* conn, char* response) {
-
-	// printf("%s dice: %s\n", addr->url, response);
-
-	parse_result_t* result;
-
-	LOG("response: (%s)\n", response);
-
-	if (err->code) {
-		printf(ANSI_COLOR_RED "server error(%d): %s\n" ANSI_COLOR_RESET, err->code, err->msg);
-		return;
-	}
-
-	result = parse_encoded((const char*)response);
-
-	if (strcmp(result->kind, "int") == 0) {
-		SUCCESS("server says: %d\n", result->data.i);
-	} else if (strcmp(result->kind, "double") == 0) {
-		SUCCESS("server says: %f\n", result->data.d);
-	} else if (strcmp(result->kind, "string") == 0) {
-		SUCCESS("server says: %s\n", result->data.str);
-	}
-
-	connection_close(conn);
-}
-
 int main(int argc, char** argv) {
 
 	connection_t* connection;
@@ -102,7 +74,7 @@ int main(int argc, char** argv) {
 	shell_buffer = (char*)malloc(2048);
 	memset(shell_buffer, ZERO, 2048);
 	/**/
-	while (!isConnectionClosed(connection)) {
+	while (!is_connection_closed(connection)) {
 
 		printf("> ");
 
@@ -133,8 +105,8 @@ int main(int argc, char** argv) {
 		} while (c != EOF && !command_read);
 
 		if ((err = cmd_parse(connection, shell_buffer))) {
-			if(err != COMMAND_CLOSE_OK ){
-				ERROR("Command failed with error: %d", err);	
+			if (err != COMMAND_CLOSE_OK) {
+				ERROR("Command failed with error: %d", err);
 			} else {
 				connection_close(connection);
 			}
@@ -144,6 +116,6 @@ int main(int argc, char** argv) {
 		shell_index     = 0;
 	}
 	//close resources: DB, MSQ, FIFO
-	
+
 	return 0;
 }

@@ -30,7 +30,7 @@ int set_insert_query_table(sqlite_insert_query_t* query, char* table) {
 }
 
 int set_insert_query_value(sqlite_insert_query_t* query, char* atribute, char* value) {
-	int i = 0;
+	int   i = 0;
 	char* atr;
 	char* val;
 
@@ -38,7 +38,7 @@ int set_insert_query_value(sqlite_insert_query_t* query, char* atribute, char* v
 		errno = ERR_NULL_QUERY;
 		return -1;
 	}
-	
+
 	while (query->atributes[i] != NULL && i++ < MAX_COLUMNS)
 		;
 

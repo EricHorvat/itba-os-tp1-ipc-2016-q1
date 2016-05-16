@@ -12,7 +12,7 @@
 #include <signal.h>
 #include <semaphore.h>
 
-static sem_t * sem_id;
+static sem_t*         sem_id;
 static shared_data_t* shared_msg = NULL;
 
 static void signal_callback_handler(int signum);
@@ -30,7 +30,6 @@ int init_monitor(void) {
 	int shmfd;
 	int shared_seg_size = (1 * sizeof(shared_data_t));
 
-
 	signal(SIGINT, signal_callback_handler);
 
 	shmfd = shm_open(SHMOBJ_PATH, O_CREAT | O_RDWR, S_IRWXU | S_IRWXG);
@@ -44,10 +43,10 @@ int init_monitor(void) {
 
 	sem_id = sem_open(SEM_PATH, O_CREAT, S_IRUSR | S_IWUSR, 1);
 
-	shared_msg = (shared_data_t *)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
+	shared_msg = (shared_data_t*)mmap(NULL, shared_seg_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
 	if (shared_msg == NULL) {
-			ERROR("mmap()");
-			return 1;
+		ERROR("mmap()");
+		return 1;
 	}
 
 	return 0;
@@ -66,5 +65,4 @@ void post_status(int worker, long int thread, int status) {
 void exit_monitor(void) {
 
 	signal_callback_handler(0);
-
-} 
+}

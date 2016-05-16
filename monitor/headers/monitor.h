@@ -5,10 +5,10 @@
 
 #define SEM_PATH "/semtpsoipc"
 
-typedef struct  {
-	int worker;
+typedef struct {
+	int      worker;
 	long int thread;
-	int status;
+	int      status;
 } shared_data_t;
 
 #define STATUS_OK 2
@@ -17,4 +17,4 @@ typedef struct  {
 #define STATUS_IDLE 4
 #define STATUS_DOWN -1
 
-#endif // __MONITOR_H__
+#endif  // __MONITOR_H__

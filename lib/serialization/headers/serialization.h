@@ -14,17 +14,17 @@ typedef struct {
 	 * con que me puedo encontrar
 	 */
 	union {
-		int                 	i;
-		double              	d;
-		char*               	str;
-		void*               	data;
-		command_get_t*      	get_cmd;
-		command_post_t*     	post_cmd;
-		command_login_t*    	login_cmd;
-		command_logout_t*   	logout_cmd;
-		command_close_t*    	close_cmd;
-		command_new_user_t*		new_user_cmd;
-		command_change_pass_t* 	change_pass_cmd;
+		int                    i;
+		double                 d;
+		char*                  str;
+		void*                  data;
+		command_get_t*         get_cmd;
+		command_post_t*        post_cmd;
+		command_login_t*       login_cmd;
+		command_logout_t*      logout_cmd;
+		command_close_t*       close_cmd;
+		command_new_user_t*    new_user_cmd;
+		command_change_pass_t* change_pass_cmd;
 	} data;
 
 } parse_result_t;

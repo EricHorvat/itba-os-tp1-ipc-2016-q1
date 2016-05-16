@@ -42,14 +42,14 @@ char** split_arguments(char* sentence) {
 	int index = 0, last_begin = 0, count = 0, last_was_char = no,
 	    quotation_open = no;
 	char** result;
-	char* aux_str;
+	char*  aux_str;
 
 	while (sentence[index] != '\0') {
 		if (sentence[index] == ' ') {
 			if (last_was_char == yes && !quotation_open) {
 				count++;
 
-				aux_str = (char*)malloc( index - last_begin + 1 );
+				aux_str = (char*)malloc(index - last_begin + 1);
 
 				memset(aux_str, '\0', (index - last_begin + 1));
 				strncpy(aux_str, sentence + last_begin, index - last_begin);

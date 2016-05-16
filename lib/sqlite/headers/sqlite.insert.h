@@ -8,10 +8,8 @@ typedef struct {
 } sqlite_insert_query_t;
 
 int create_insert_query(sqlite_insert_query_t* query);
-
 int set_insert_query_table(sqlite_insert_query_t* query, char* table);
-
 int set_insert_query_value(sqlite_insert_query_t* query, char* atribute, char* value);
-
 char* insert_query_to_str(sqlite_insert_query_t* query);
+
 #endif

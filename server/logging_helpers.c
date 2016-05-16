@@ -21,10 +21,10 @@ static void init_logging_server(void);
 void log_mq(char* kind, char* str);
 
 void init_mq(void) {
-	init_logging_server();		
+	init_logging_server();
 	if ((mq = mq_open(MSQUEUE_NAME, O_WRONLY)) < 0) {
-			printf("%d\n", errno);
-			exit(-1);
+		printf("%d\n", errno);
+		exit(-1);
 	}
 }
 
@@ -49,13 +49,13 @@ void log_mq(char* kind, char* str) {
 
 	msg_f = (char*)malloc(strlen(kind) + 2 + strlen(str) + 2);
 	sprintf(msg_f, "%s: %s\n", kind, str);
-	if ( mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0 ) {
+	if (mq_send(mq, strdup(msg_f), strlen(msg_f), 0) != 0) {
 		ERROR("msq failed with error %d\tmsg:%s", errno, strerror(errno));
 	}
 }
 
 static void init_logging_server(void) {
-	pid_t    child_pid = 0;
+	pid_t  child_pid = 0;
 	char **args, **envp;
 
 	if ((child_pid = fork()) == 0) {

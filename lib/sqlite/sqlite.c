@@ -36,9 +36,9 @@ char* run_sqlite_query(sql_connection_t* conn, char* query_text) {
 	int    written_bytes = 0;
 	int    i             = 0;
 	char** asn_vector;
-	char* query_response;
-	char* aux;
-	int readd;
+	char*  query_response;
+	char*  aux;
+	int    readd;
 
 	if (!conn) {
 		ERROR("sql_connection es null");
@@ -53,12 +53,12 @@ char* run_sqlite_query(sql_connection_t* conn, char* query_text) {
 	do {
 		written_bytes += write(conn->write_pipe, query_text + written_bytes, 1);
 	} while (written_bytes < len);
-	
+
 	do {
 		query_response = malloc(sizeof(char) * MAX_QUERY_RESPONSE_LENGTH);
-		aux      = malloc(sizeof(char) * 2);
+		aux            = malloc(sizeof(char) * 2);
 		aux[1]         = '\0';
-		readd      = 0;
+		readd          = 0;
 		strcpy(query_response, "");
 		do {
 			readd += read(conn->read_pipe, aux, 1);
@@ -73,10 +73,10 @@ char* run_sqlite_query(sql_connection_t* conn, char* query_text) {
 
 int run_insert_sqlite_query(sql_connection_t* conn, sqlite_insert_query_t* query) {
 
-	char * aux;
+	char* aux;
 	aux = run_sqlite_query(conn, insert_query_to_str(query));
 
-	if(strcmp(aux,END_STR)!= 0)
+	if (strcmp(aux, END_STR) != 0)
 		return ERR_RUN_SQL_ERROR;
 
 	return SQL_OK;
@@ -91,34 +91,34 @@ char* run_select_sqlite_query(sql_connection_t* conn, sqlite_select_query_t* que
 
 int run_delete_sqlite_query(sql_connection_t* conn, sqlite_delete_query_t* query) {
 
-	char * aux;
+	char* aux;
 	aux = run_sqlite_query(conn, delete_query_to_str(query));
 
-	if(strcmp(aux,END_STR)!= 0)
+	if (strcmp(aux, END_STR) != 0)
 		return ERR_RUN_SQL_ERROR;
 	return SQL_OK;
 }
 
 int run_update_sqlite_query(sql_connection_t* conn, sqlite_update_query_t* query) {
 
-	char * aux;
+	char* aux;
 	aux = update_query_to_str(query);
 	aux = run_sqlite_query(conn, aux);
-	if(strcmp(aux,END_STR)!= 0)
+	if (strcmp(aux, END_STR) != 0)
 		return ERR_RUN_SQL_ERROR;
 	return SQL_OK;
 }
 
 char* to_fields_string(char** fields) {
 	char* aux = malloc(sizeof(char) * MAX_QUERY_LENGTH);
-	int   i   = 0, n=0;
+	int   i = 0, n = 0;
 	while (fields[i] != NULL) {
 		if (i == 0)
 			n = sprintf(aux, "%s", fields[i]);
 		else
 			n = sprintf(aux, "%s,%s", aux, fields[i]);
 		i++;
-		aux[n]='\0';
+		aux[n] = '\0';
 	}
 	return aux;
 }
@@ -161,11 +161,11 @@ int close_sql_conn(sql_connection_t* conn) {
 int init_sqlite_server(int read_pipe, int write_pipe) {
 
 	sqlite3* db;
-	char* errMsg;
+	char*    errMsg;
 	int      run = 1;
-	char* query_buffer;
-	char* aux;
-	int q = 0, n;
+	char*    query_buffer;
+	char*    aux;
+	int      q = 0, n;
 
 	if (sqlite3_open("./files.db", &db)) {
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
@@ -177,7 +177,7 @@ int init_sqlite_server(int read_pipe, int write_pipe) {
 		query_buffer = malloc(sizeof(char) * MAX_QUERY_LENGTH);
 
 		q   = 0;
-		aux = (char*)malloc(2*sizeof(char));
+		aux = (char*)malloc(2 * sizeof(char));
 		strcpy(query_buffer, "");
 		aux[1] = ZERO;
 		do {
@@ -193,8 +193,8 @@ int init_sqlite_server(int read_pipe, int write_pipe) {
 				fprintf(stderr, "SQL error: %s  %d\n", errMsg, n);
 				sqlite3_free(errMsg);
 			}
-			aux = malloc(sizeof(char)*strlen(END_STR)+2);
-			sprintf(aux,"%s\n",END_STR);
+			aux = malloc(sizeof(char) * strlen(END_STR) + 2);
+			sprintf(aux, "%s\n", END_STR);
 			write_one_by_one_in_fd(aux, write_pipe, strlen(aux));
 		} else {
 			run = 0;

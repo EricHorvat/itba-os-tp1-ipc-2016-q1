@@ -38,13 +38,13 @@ static void* server_responder(void* data);
 
 static void* server_responder(void* data) {
 
-	client_request_t* 	req;
-	comm_error_t*     	err;
-	parse_result_t*   	result;
-	int               	pid;
-	long int          	self;
-	char*             	log_str;
-	bool				closing = no;
+	client_request_t* req;
+	comm_error_t*     err;
+	parse_result_t*   result;
+	int               pid;
+	long int          self;
+	char*             log_str;
+	bool              closing = no;
 
 	log_str = (char*)malloc(MAX_LOG_LENGTH);
 	pid     = (int)getpid();
@@ -63,13 +63,13 @@ static void* server_responder(void* data) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %d", pid, self, result->data.i);
 		send_int((result->data.i) * 2, req->connection, err);
-		LOG_INFO(log_str, "worker %d::thread %ld::client i say: %d", pid, self, (result->data.i) * 2);
+		LOG_INFO(log_str, "worker %d::thread %ld::client I say: %d", pid, self, (result->data.i) * 2);
 
 	} else if (strcmp(result->kind, "double") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %f", pid, self, result->data.d);
 		send_double((result->data.d) * 2, req->connection, err);
-		LOG_INFO(log_str, "worker %d::thread %ld::client i say: %f", pid, self, (result->data.d) * 2);
+		LOG_INFO(log_str, "worker %d::thread %ld::client I say: %f", pid, self, (result->data.d) * 2);
 
 	} else if (strcmp(result->kind, "string") == 0) {
 
@@ -99,7 +99,7 @@ static void* server_responder(void* data) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->kind);
 		req->connection->state = CONNECTION_STATE_CLOSED;
-		closing = yes;
+		closing                = yes;
 	} else if (strcmp(result->kind, "command.new_user") == 0) {
 
 		LOG_INFO(log_str, "worker %d::thread %ld::client says: %s", pid, self, result->data.new_user_cmd->user->username);
@@ -114,7 +114,7 @@ static void* server_responder(void* data) {
 	if (err->code) {
 		post_status(pid, self, STATUS_ERROR);
 		LOG_ERROR(log_str, "worker %d::thread %ld::error: %d\tmsg:%s", pid, self, err->code, err->msg);
-	} else if (!closing){
+	} else if (!closing) {
 		LOG_INFO(log_str, "worker %d::thread %ld::data sent successfully: (%s)", pid, self, err->msg);
 	}
 
@@ -138,7 +138,7 @@ static void listen_connections(server_config_t* config) {
 	size_t addr_len = 0;
 	char*  log_str;
 
-	comm_error_t *error;
+	comm_error_t* error;
 
 	size_t num_threads = MIN_THREADS;
 
@@ -223,14 +223,14 @@ static void listen_connections(server_config_t* config) {
 				exit(3);
 			}
 
-			while (!isConnectionClosed(connection)) {
+			while (!is_connection_closed(connection)) {
 				// si no manda nada cuelga aca
 				LOG_WARN(log_str, "worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
 				post_status(getpid(), 0, STATUS_IDLE);
 				command = comm_receive_data(connection, error);
 				if (error->code) {
 					post_status(getpid(), 0, STATUS_ERROR);
-					ERROR("worker %d::received failed with code", getpid(), error->code);
+					ERROR("worker %d::received failed with code %d", getpid(), error->code);
 					post_status(getpid(), 0, STATUS_WARN);
 					exit(1);
 				}
@@ -272,7 +272,6 @@ static void listen_connections(server_config_t* config) {
 
 int main(int argc, char** argv) {
 
-	
 	server_config_t* config;
 	char*            config_file_opt;
 

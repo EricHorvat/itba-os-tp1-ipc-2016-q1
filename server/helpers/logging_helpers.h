@@ -13,7 +13,7 @@
 #define LOG_WARN(str, msg, ...)     \
 	sprintf(str, msg, ##__VA_ARGS__); \
 	log_warning(str)
-#define LOG_SUCCESS(str, msg, ...)     \
+#define LOG_SUCCESS(str, msg, ...)  \
 	sprintf(str, msg, ##__VA_ARGS__); \
 	log_success(str)
 #else

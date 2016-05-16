@@ -8,7 +8,7 @@ MATHFLAGS+=-lrt
 endif
 
 
-GCCMACROS=-D__DEBUG__ 
+# GCCMACROS=-D__DEBUG__ 
 ifdef LOGGING
 GCCMACROS+=-D__LOGGING__
 endif
@@ -100,7 +100,8 @@ wipe:
 	rm -f /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 clean:
-	rm -rfv *.o client/*.o server/*.o logging/*.o monitor/*.o lib/communication/*/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o lib/*.a
+	rm -rfv *.o client/*.o server/*.o logging/*.o monitor/*.o lib/communication/*/*.o lib/serialization/*.o lib/sqlite/*.o lib/file_utils/*.o lib/*.a *.bin
 	rm -fv /tmp/*.fifo /tmp/*.req /tmp/*.res
 
 .PHONY: all wipe clean
+	

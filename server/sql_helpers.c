@@ -13,11 +13,11 @@ void set_sql_connection(sql_connection_t* sql_conn) {
 	sql_connection = sql_conn;
 }
 
-char* ask_for_file_to_db(char* file_alias, fs_user_t* user) { 
+char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {
 
 	sqlite_select_query_t* query;
 
-	char*   ans;
+	char* ans;
 	char* alias_str;
 	char* path_str;
 
@@ -37,7 +37,6 @@ char* ask_for_file_to_db(char* file_alias, fs_user_t* user) {
 	set_select_query_where(query, "alias", "=", alias_str);
 	set_select_query_where(query, "path", "LIKE", path_str);
 
-
 	if (!strcmp((ans = run_select_sqlite_query(sql_connection, query)), END_STR)) {
 		errno = EMPTY_RESPONSE;
 		return NULL;
@@ -50,15 +49,15 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 
 	sqlite_insert_query_t* query;
 	int                    ans;
-	char* path_str;
-	char* alias_str;
+	char*                  path_str;
+	char*                  alias_str;
 
 	query = NEW(sqlite_insert_query_t);
 
 	create_insert_query(query);
 	set_insert_query_table(query, "files");
 
-	path_str = malloc((1 + strlen(user->home)+ 1 + strlen(file_alias) + 2) * sizeof(char));
+	path_str  = malloc((1 + strlen(user->home) + 1 + strlen(file_alias) + 2) * sizeof(char));
 	alias_str = malloc((strlen(file_alias) + 1) * sizeof(char));
 
 	sprintf(path_str, "\"%s/%s\"", user->home, file_alias);
@@ -71,16 +70,19 @@ int insert_alias_in_db(char* file_alias, fs_user_t* user) {
 
 	ans = run_insert_sqlite_query(sql_connection, query);
 
+	if (ans)
+		return ans;
+
 	return EXPECTED_RESPONSE;
 }
 
 int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 
-	char* usern;
-	char* pass;
+	char*                  usern;
+	char*                  pass;
 	sqlite_select_query_t* query;
-	char** response_array;
-	char* response;
+	char**                 response_array;
+	char*                  response;
 
 	query = NEW(sqlite_select_query_t);
 
@@ -93,7 +95,6 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 
 	usern = malloc((2 + strlen(username) + 1) * sizeof(char));
 	pass  = malloc((2 + strlen(password) + 1) * sizeof(char));
-	
 
 	sprintf(usern, "\"%s\"", username);
 	sprintf(pass, "\"%s\"", password);
@@ -104,7 +105,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), END_STR)) {
 		return EMPTY_RESPONSE;
 	}
-	
+
 	response_array = split_arguments(response);
 	user->name     = username;
 	user->home     = response_array[0];
@@ -114,13 +115,11 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	return EXPECTED_RESPONSE;
 }
 
-
 bool user_in_db(char* username) {
 
-	char* user;
+	char*                  user;
 	sqlite_select_query_t* query;
-	char** response_array;
-	char* response;
+	char*                  response;
 
 	query = NEW(sqlite_select_query_t);
 
@@ -128,13 +127,13 @@ bool user_in_db(char* username) {
 
 	set_select_query_table(query, "users");
 	set_select_query_atribute(query, "home");
-	
+
 	user = malloc((2 + strlen(username) + 1) * sizeof(char));
-	
+
 	sprintf(user, "\"%s\"", username);
-	
+
 	set_select_query_where(query, "username", "=", user);
-	
+
 	if (!strcmp((response = run_select_sqlite_query(sql_connection, query)), END_STR)) {
 		return no;
 	}
@@ -145,10 +144,10 @@ bool user_in_db(char* username) {
 int new_user_in_db(user_t* user) {
 	sqlite_insert_query_t* query = malloc(sizeof(sqlite_insert_query_t));
 	int                    ans;
-	char* name_str;
-	char* pass_str;
-	char* home_str;
-	char* root_str;
+	char*                  name_str;
+	char*                  pass_str;
+	char*                  home_str;
+	char*                  root_str;
 
 	create_insert_query(query);
 	set_insert_query_table(query, "users");
@@ -168,37 +167,35 @@ int new_user_in_db(user_t* user) {
 	set_insert_query_value(query, "home", home_str);
 	set_insert_query_value(query, "is_admin", root_str);
 
-	run_insert_sqlite_query(sql_connection, query);
+	ans = run_insert_sqlite_query(sql_connection, query);
+
+	if (ans)
+		return ans;
 
 	return EXPECTED_RESPONSE;
 }
 
-bool update_pass_in_db(fs_user_t * user, char* new_pass){
-	
-	sqlite_update_query_t* query = malloc(sizeof(sqlite_update_query_t));
-	
+bool update_pass_in_db(fs_user_t* user, char* new_pass) {
+
+	sqlite_update_query_t* query;
+
 	char* pass_str;
-	char * id_str;
-	printf("1\n");
+	char* id_str;
+
+	query = malloc(sizeof(sqlite_update_query_t));
+
 	create_update_query(query);
-	printf("2\n");
 	set_update_query_table(query, "users");
-	printf("3\n");
-	
+
 	pass_str = malloc((1 + strlen(new_pass) + 2) * sizeof(char));
-	id_str = malloc((6) * sizeof(char));
+	id_str   = malloc((6) * sizeof(char));
 	sprintf(pass_str, "\"%s\"", new_pass);
 	sprintf(id_str, "%d", user->id);
-	printf("4\n",new_pass,pass_str);
 
-	printf("5\n");
 	set_update_query_value(query, "password", pass_str);
-	printf("6\n");
-	set_update_query_where(query, "user_id","=",id_str);
+	set_update_query_where(query, "user_id", "=", id_str);
 
-	printf("7\n");
 	run_update_sqlite_query(sql_connection, query);
-	printf("8\n");
 
 	return EXPECTED_RESPONSE;
 }

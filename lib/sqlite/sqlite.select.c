@@ -37,7 +37,6 @@ int set_select_query_atribute(sqlite_select_query_t* query, char* atribute) {
 		return -1;
 	}
 
-	
 	while (query->atributes[i] != NULL && i++ < MAX_COLUMNS)
 		;
 
@@ -60,7 +59,7 @@ int set_select_query_where(sqlite_select_query_t* query, char* column, char* op,
 }
 
 char* select_query_to_str(sqlite_select_query_t* query) {
-	int size;
+	int   size;
 	char* query_str;
 	if (query == NULL) {
 		errno = ERR_NULL_QUERY;

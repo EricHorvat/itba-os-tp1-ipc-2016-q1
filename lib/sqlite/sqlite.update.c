@@ -30,17 +30,16 @@ int set_update_query_table(sqlite_update_query_t* query, char* table) {
 }
 
 int set_update_query_value(sqlite_update_query_t* query, char* atribute, char* value) {
-	
+
 	char* atr;
 	char* val;
-	int i = 0;
+	int   i = 0;
 
 	if (query == NULL) {
 		errno = ERR_NULL_QUERY;
 		return -1;
 	}
 
-	
 	while (query->atributes[i] != NULL && i++ < MAX_COLUMNS)
 		;
 
@@ -67,10 +66,10 @@ int set_update_query_where(sqlite_update_query_t* query, char* column, char* op,
 }
 
 char* update_query_to_str(sqlite_update_query_t* query) {
-	
-	int    i   = 0, size =0;
+
+	int    i = 0, size = 0;
 	char** aux;
-	char* query_str;
+	char*  query_str;
 
 	if (query == NULL) {
 		errno = ERR_NULL_QUERY;
@@ -86,19 +85,19 @@ char* update_query_to_str(sqlite_update_query_t* query) {
 	}
 
 	aux = (char**)malloc(sizeof(char*) * MAX_COLUMNS);
-	
+
 	while (query->atributes[i] != NULL && i <= MAX_COLUMNS) {
 
-		int n=0;
-		aux[i] = malloc(sizeof(char) * (strlen(query->atributes[i]) + 1 + strlen(query->values[i]) + 1));
-		n=sprintf(aux[i], "%s=%s", query->atributes[i], query->values[i]);
-		aux[i][n]='\0';
+		int n     = 0;
+		aux[i]    = malloc(sizeof(char) * (strlen(query->atributes[i]) + 1 + strlen(query->values[i]) + 1));
+		n         = sprintf(aux[i], "%s=%s", query->atributes[i], query->values[i]);
+		aux[i][n] = '\0';
 		i++;
 	}
-	aux[i]=NULL;
+	aux[i] = NULL;
 
-	query_str = malloc(sizeof(char) * MAX_QUERY_LENGTH);
-	size = sprintf(query_str, "UPDATE %s SET %s WHERE %s;", query->table, to_fields_string(aux), query->where);
+	query_str       = malloc(sizeof(char) * MAX_QUERY_LENGTH);
+	size            = sprintf(query_str, "UPDATE %s SET %s WHERE %s;", query->table, to_fields_string(aux), query->where);
 	query_str[size] = '\0';
 	return query_str;
 }

@@ -7,11 +7,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
+comm_addr_error_t address_from_url(char* url, comm_addr_t* address) {
 
 	// Read protocol first
 	unsigned int index = 0;
-	char *start, *offset;
+	char *       start, *offset;
 	start = offset = url;
 
 	if (address == nil) {
@@ -20,8 +20,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	}
 
 	address->valid = yes;
-	address->url = (char*)malloc(strlen(url)+1);
-	memset(address->url, ZERO, strlen(url)+1);
+	address->url   = (char*)malloc(strlen(url) + 1);
+	memset(address->url, ZERO, strlen(url) + 1);
 	strcpy(address->url, url);
 
 	while (*offset != COLON && *offset != NEWLINE && *offset != EOF && *offset != ZERO) {
@@ -42,8 +42,8 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 	}
 	++offset;
 	++offset;
-	address->protocol = (char*)malloc(index+1);
-	memset(address->protocol, ZERO, index+1);
+	address->protocol = (char*)malloc(index + 1);
+	memset(address->protocol, ZERO, index + 1);
 	strncpy(address->protocol, start, index);
 
 	// Read host
@@ -54,9 +54,9 @@ comm_addr_error_t address_from_url(char *url, comm_addr_t *address) {
 		++offset;
 		++index;
 	}
-	
-	address->host = (char*)malloc(index+1);
-	memset(address->host, ZERO, index+1);
+
+	address->host = (char*)malloc(index + 1);
+	memset(address->host, ZERO, index + 1);
 	strncpy(address->host, start, index);
 
 	return ADDRESS_OK;

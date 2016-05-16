@@ -107,13 +107,11 @@ char* decode_to_raw_data(char* data) {
 	size_t i = 0;
 	int    ascii;
 
-	INFO("decode %s", data);
+	WARN("Ohh file is encrypted\nDecoding %s", data);
 
 	len = strlen(data);
 
 	result = (char*)malloc(len / 3 + 1);
-
-	INFO("decode %s", data);
 
 	for (; i < len; i += 3) {
 		ascii         = (data[i] - '0') * 100 + (data[i + 1] - '0') * 10 + (data[i + 2] - '0');

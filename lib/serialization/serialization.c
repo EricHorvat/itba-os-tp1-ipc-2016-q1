@@ -129,10 +129,10 @@ const char* stringify_command_new_user(command_new_user_t* cmd) {
 	return json_object_to_json_string(json_object_object);
 }
 
-const char* stringify_command_change_pass(command_change_pass_t* cmd){
-	json_object* json_object_object       = json_object_new_object();
-	json_object* json_object_string_kind  = json_object_new_string("command.change_pass");
-	json_object* json_object_string_pass  = json_object_new_string(cmd->pass);
+const char* stringify_command_change_pass(command_change_pass_t* cmd) {
+	json_object* json_object_object      = json_object_new_object();
+	json_object* json_object_string_kind = json_object_new_string("command.change_pass");
+	json_object* json_object_string_pass = json_object_new_string(cmd->pass);
 
 	json_object_object_add(json_object_object, "kind", json_object_string_kind);
 	json_object_object_add(json_object_object, "password", json_object_string_pass);
@@ -144,16 +144,16 @@ const char* stringify_command_change_pass(command_change_pass_t* cmd){
 
 parse_result_t* parse_encoded(const char* json) {
 
-	const char*         	kind;
-	json_object *       	main_object, *aux_object;
-	const char*         	str_value;
-	command_get_t*      	get_cmd      	= NULL;
-	command_post_t*     	post_cmd     	= NULL;
-	command_login_t*    	login_cmd    	= NULL;
-	command_logout_t*   	logout_cmd   	= NULL;
-	command_close_t*    	close_cmd    	= NULL;
-	command_new_user_t* 	new_user_cmd 	= NULL;
-	command_change_pass_t*	change_pass_cmd	= NULL;
+	const char*            kind;
+	json_object *          main_object, *aux_object;
+	const char*            str_value;
+	command_get_t*         get_cmd         = NULL;
+	command_post_t*        post_cmd        = NULL;
+	command_login_t*       login_cmd       = NULL;
+	command_logout_t*      logout_cmd      = NULL;
+	command_close_t*       close_cmd       = NULL;
+	command_new_user_t*    new_user_cmd    = NULL;
+	command_change_pass_t* change_pass_cmd = NULL;
 
 	parse_result_t* result = NEW(parse_result_t);
 
@@ -289,7 +289,7 @@ parse_result_t* parse_encoded(const char* json) {
 		change_pass_cmd = NEW(command_change_pass_t);
 
 		json_object_object_get_ex(main_object, "password", &aux_object);
-		str_value     = json_object_get_string(aux_object);
+		str_value             = json_object_get_string(aux_object);
 		change_pass_cmd->pass = (char*)malloc(strlen(str_value) + 1);
 		strcpy(change_pass_cmd->pass, str_value);
 
@@ -309,16 +309,17 @@ parse_result_t* receive(connection_t* conn, comm_error_t* error) {
 
 	char* response;
 
-	INFO("will receive data");
+	INFO("Receiving data from server..");
 	response = comm_receive_data(conn, error);
-	INFO("received data");
+	
 
 	if (error->code) {
 		ERROR("received data with code %d", error->code);
 		return null;
 	}
+	SUCCESS("Received data successfully");
 
-	INFO("parsing response");
+	INFO("Parsing response");
 	return parse_encoded(response);
 }
 
@@ -326,29 +327,21 @@ parse_result_t* receive(connection_t* conn, comm_error_t* error) {
 
 void send_string(char* string, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_string(string);
-	error->msg="OK";
-	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_int(int number, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_int(number);
-	error->msg="OK";
-	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_double(double number, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_double(number);
-	error->msg="OK";
-	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
 void send_data(void* data, size_t size, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_data(data, size);
-	error->msg="OK";
-	error->code=0;
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
@@ -403,7 +396,7 @@ void send_cmd_close(connection_t* conn, comm_error_t* error) {
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }
 
-void send_cmd_change_pass(command_change_pass_t * cmd, connection_t* conn, comm_error_t* error) {
+void send_cmd_change_pass(command_change_pass_t* cmd, connection_t* conn, comm_error_t* error) {
 	const char* serialized = stringify_command_change_pass(cmd);
 	comm_send_data((void*)serialized, strlen(serialized), conn, error);
 }

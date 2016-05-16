@@ -31,8 +31,8 @@ typedef struct {
 comm_error_code_t connection_open(connection_t* conn);
 comm_error_code_t connection_close(connection_t* conn);
 
-bool isConnectionOpen(connection_t* conn);
-bool isConnectionClosed(connection_t* conn);
+bool is_connection_open(connection_t* conn);
+bool is_connection_closed(connection_t* conn);
 
 #define CONNECTION_OK 0
 
@@ -47,7 +47,6 @@ bool isConnectionClosed(connection_t* conn);
 #define ERR_FIFO_CANT_OPEN_RESPONSE 301
 #define ERR_FIFO_CANT_OPEN_REQUEST 302
 
-#define ERR_SOCKET_NOT_CREATED 400
 #define ERR_NO_SUCH_HOST 401
 #define ERR_SOCKET_NOT_CONNECTED 402
 

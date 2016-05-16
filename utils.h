@@ -1,5 +1,5 @@
-#ifndef __UTILS_H_
-#define __UTILS_H_
+#ifndef __UTILS_H__
+#define __UTILS_H__
 
 typedef unsigned char bool;
 typedef unsigned char boolean;
@@ -45,7 +45,7 @@ typedef char* string;
 
 #define ANSI_COLOR_RESET "\x1b[0m"
 
-// Logging
+/* Logging */
 
 #ifdef __DEBUG__
 
