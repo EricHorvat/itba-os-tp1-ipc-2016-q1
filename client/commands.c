@@ -18,12 +18,12 @@ typedef struct {
 	client_command_info_t* info;
 } client_command_t;
 
-static bool initialized_commands = no;
-static bool logged               = no;
+static boolean initialized_commands = no;
+static boolean logged               = no;
 
 static void              initialize_commands(void);
 static client_command_t* new_command(char* name, char* correct_use, char* help, int (*cmd)(connection_t*, client_command_info_t* info, char** argv, int argc));
-static bool show_help_for_command(char* arg, client_command_info_t* info);
+static boolean show_help_for_command(char* arg, client_command_info_t* info);
 
 static int cmd_open(connection_t* conn, client_command_info_t* info, char** argv, int argc);
 static int cmd_sendi(connection_t* conn, client_command_info_t* info, char** argv, int argc);
@@ -75,7 +75,7 @@ static client_command_t* new_command(char* name, char* correct_use, char* help, 
 	return command;
 }
 
-static bool show_help_for_command(char* arg, client_command_info_t* info) {
+static boolean show_help_for_command(char* arg, client_command_info_t* info) {
 
 	if (strcmp("help", arg) == 0) {
 		LOG("%s", info->help);
@@ -331,7 +331,6 @@ static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv,
 
 	command_get_t*  cmd;
 	comm_error_t*   err;
-	parse_result_t* presult;
 
 	err = NEW(comm_error_t);
 

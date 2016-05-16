@@ -7,14 +7,14 @@
 
 #define BOUNDARY_PREFIX "--boundaryTPSO1IPC"
 
-static bool seeded = false;
+static boolean seeded = false;
 
 static int rand_max_digits = -1;
 
 int getrnd(int min, int max) {
 	if (!seeded) {
 		srand(time(NULL));
-		seeded = true;
+		seeded = yes;
 	}
 	return rand() % (max - min) + min;
 }

@@ -15,8 +15,6 @@
 #include <sqlite.h>
 #include <file_utils.h>
 #include <math.h>
-// #include <mqueue.h>
-//#include <server_utils.h>
 #include <helpers/logging_helpers.h>
 #include <helpers/responder.h>
 #include <helpers/sql_helpers.h>
@@ -42,7 +40,7 @@ static void* server_responder(void* data) {
 	int               pid;
 	long int          self;
 	char*             log_str;
-	bool              closing = no;
+	boolean              closing = no;
 
 	log_str = (char*)malloc(MAX_LOG_LENGTH);
 	pid     = (int)getpid();
@@ -220,7 +218,6 @@ static void listen_connections(server_config_t* config) {
 			}
 
 			while (!is_connection_closed(connection)) {
-				// si no manda nada cuelga aca
 				LOG_WARN(log_str, "worker %d::waiting for data from %s", getpid(), connection->client_addr->host);
 				post_status(getpid(), 0, STATUS_IDLE);
 				command = comm_receive_data(connection, error);
@@ -259,9 +256,8 @@ static void listen_connections(server_config_t* config) {
 
 				free(command);
 			}
+			
 			connection_close(connection);
-
-			//if(shutdown) {sendshoutdown()}
 
 			LOG_INFO(log_str, "worker %d::ending", getpid());
 			post_status(getpid(), 0, STATUS_DOWN);

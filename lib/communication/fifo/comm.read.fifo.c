@@ -27,7 +27,7 @@ typedef struct {
 typedef struct {
 	int   fd;
 	char* fifo;
-	bool  success;
+	boolean  success;
 } comm_data_writer_ret_t;
 
 typedef void* (*pthread_func_t)(void* data);

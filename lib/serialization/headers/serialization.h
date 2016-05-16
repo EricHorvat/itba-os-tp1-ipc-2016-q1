@@ -9,10 +9,6 @@ typedef struct {
 
 	char* kind;
 
-	/**
-	 * uso esta horripilancia porque no se
-	 * con que me puedo encontrar
-	 */
 	union {
 		int                    i;
 		double                 d;

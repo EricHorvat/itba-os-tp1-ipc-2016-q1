@@ -14,7 +14,7 @@
 
 fs_user_t* user = NULL;
 
-bool check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err);
+boolean check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err);
 void create_user_folder(char* username);
 
 void process_get_cmd(connection_t* conn, command_get_t* cmd, comm_error_t* err) {
@@ -199,7 +199,7 @@ void process_change_pass_cmd(connection_t* conn, command_change_pass_t* change, 
 	return;
 }
 
-bool check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err) {
+boolean check_user_logged(fs_user_t* user, connection_t* conn, comm_error_t* err) {
 	if (user == NULL) {
 		ERROR("USER NOT LOGGED");
 		err->code = ERR_USER_NOT_LOGGED;

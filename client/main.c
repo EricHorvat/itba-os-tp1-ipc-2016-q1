@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 	char* shell_buffer;
 	int   shell_index = 0;
 	char  c;
-	bool  command_read = false;
+	boolean  command_read = false;
 
 	int rnd;
 	int err;

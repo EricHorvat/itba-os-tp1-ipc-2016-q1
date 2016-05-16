@@ -5,7 +5,7 @@
 #include <utils.h>
 #include <stdio.h>
 
-bool exists(char* path);
+boolean exists(char* path);
 void write_one_by_one(int fd, void* data, size_t size);
 void write_one_by_one_without_zero(int fd, void* data, size_t size);
 void busy_wait_file_exists(char* path);

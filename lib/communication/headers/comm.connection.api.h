@@ -31,8 +31,8 @@ typedef struct {
 comm_error_code_t connection_open(connection_t* conn);
 comm_error_code_t connection_close(connection_t* conn);
 
-bool is_connection_open(connection_t* conn);
-bool is_connection_closed(connection_t* conn);
+boolean is_connection_open(connection_t* conn);
+boolean is_connection_closed(connection_t* conn);
 
 #define CONNECTION_OK 0
 

@@ -10,9 +10,11 @@
 #include <semaphore.h>
 #include <ncurses.h>
 #include <string.h>
-
+#include <json.h>
 #include <monitor.h>
-// #include <utils.h>
+#include <file_utils.h>
+
+#define DEFAULT_CONFIG_FILE "monitor/config/config.json"
 
 static sem_t* sem_id;
 
@@ -27,7 +29,12 @@ typedef struct {
 	thread_t** threads;
 } worker_t;
 
+typedef struct {
+	int refresh_interval;
+} monitor_config_t;
+
 static void signal_callback_handler(int signum);
+static int read_config(monitor_config_t*);
 
 static void signal_callback_handler(int signum) {
 
@@ -39,11 +46,31 @@ static void signal_callback_handler(int signum) {
 	exit(signum);
 }
 
+static int read_config(monitor_config_t *config) {
+
+	json_object *main_object, *aux_object;
+
+	const char* json;
+
+	json = raw_data_from_file(DEFAULT_CONFIG_FILE, null);
+	if (!json)
+		return -1;
+
+	main_object = json_tokener_parse(json);
+
+	json_object_object_get_ex(main_object, "refresh_interval", &aux_object);
+	config->refresh_interval = json_object_get_int(aux_object);
+
+	return 0;
+}
+
 int main(void) {
 	int            shmfd;
 	int            shared_seg_size = (1 * sizeof(shared_data_t));
 	shared_data_t* shared_msg;
 	worker_t**     workers;
+
+	monitor_config_t *config;
 
 	int current_worker = -1;
 	int current_thread = -1;
@@ -52,6 +79,10 @@ int main(void) {
 	int k              = 1;
 	int i              = 0;
 	int j              = 0;
+	int l              = 0;
+
+	config = (monitor_config_t*)malloc(sizeof(monitor_config_t));
+	read_config(config);
 
 	workers = (worker_t**)malloc(100 * sizeof(worker_t*));
 
@@ -98,9 +129,9 @@ int main(void) {
 		current_thread = shared_msg->thread;
 		current_status = shared_msg->status;
 
-		clear();
+		usleep(config->refresh_interval);
 		move(0, 0);
-		usleep(1500);
+		clear();
 
 		for (i = 0; i < total_workers; i++) {
 			if (workers[i]->id == current_worker) {
@@ -136,6 +167,7 @@ int main(void) {
 		}
 
 		j = 0;
+		l = 0;
 
 		for (i = 0; i < total_workers; i++) {
 
@@ -149,11 +181,17 @@ int main(void) {
 					attron(COLOR_PAIR(workers[i]->threads[k]->status));
 					mvprintw(j, 2, "thread %d:", workers[i]->threads[k]->id);
 					attroff(COLOR_PAIR(workers[i]->threads[k]->status));
-					refresh();
+					l++;
 					j++;
 				}
 			}
+			if (l == 0) {
+				mvprintw(j-1, 0, "                        ");
+				j--;
+			}
+			l = 0;
 		}
+		refresh();
 	}
 
 	nocbreak();

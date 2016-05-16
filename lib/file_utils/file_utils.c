@@ -9,7 +9,7 @@
  * @param  path path to tell if exists
  * @return      0 if it exists -1 otherwise
  */
-bool exists(char* path) {
+boolean exists(char* path) {
 
 	if (access(path, F_OK) == -1) {
 		return no;

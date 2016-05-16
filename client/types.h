@@ -17,7 +17,7 @@ typedef struct {
 typedef struct {
 	char* username;
 	char* password;
-	bool  admin;
+	boolean  admin;
 } user_t;
 
 typedef struct {

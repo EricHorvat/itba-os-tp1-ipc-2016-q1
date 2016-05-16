@@ -14,7 +14,7 @@ typedef struct {
 	char*              url;
 	char*              protocol;
 	char*              host;
-	bool               valid;
+	boolean               valid;
 	comm_addr_extra_t* extra;
 } comm_addr_t;
 

@@ -29,7 +29,7 @@ typedef struct {
 typedef struct {
 	int   fd;
 	char* fifo;
-	bool  success;
+	boolean  success;
 } comm_data_writer_ret_t;
 
 typedef void* (*pthread_func_t)(void* data);
@@ -43,7 +43,7 @@ typedef void* (*pthread_func_t)(void* data);
 static void* data_listener(void*);
 
 pthread_mutex_t lock;
-bool            mutex_init = no;
+boolean            mutex_init = no;
 
 static void* data_listener(void* data) {
 
@@ -157,10 +157,10 @@ void comm_send_data_async(void* data, size_t size, connection_t* conn, comm_call
 	}
 }
 
-bool is_connection_open(connection_t* conn) {
+boolean is_connection_open(connection_t* conn) {
 	return conn->state == CONNECTION_STATE_OPEN;
 }
 
-bool is_connection_closed(connection_t* conn) {
+boolean is_connection_closed(connection_t* conn) {
 	return conn->state == CONNECTION_STATE_CLOSED;
 }

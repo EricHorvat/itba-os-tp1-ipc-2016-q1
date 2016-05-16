@@ -115,7 +115,7 @@ int user_identification_in_db(char* username, char* password, fs_user_t* user) {
 	return EXPECTED_RESPONSE;
 }
 
-bool user_in_db(char* username) {
+boolean user_in_db(char* username) {
 
 	char*                  user;
 	sqlite_select_query_t* query;
@@ -175,7 +175,7 @@ int new_user_in_db(user_t* user) {
 	return EXPECTED_RESPONSE;
 }
 
-bool update_pass_in_db(fs_user_t* user, char* new_pass) {
+boolean update_pass_in_db(fs_user_t* user, char* new_pass) {
 
 	sqlite_update_query_t* query;
 

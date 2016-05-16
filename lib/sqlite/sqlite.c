@@ -8,7 +8,7 @@
 #include <utils.h>
 
 static pthread_mutex_t lock;
-static bool            mutex_init = no;
+static boolean            mutex_init = no;
 
 static void write_one_by_one_in_fd(char* str, int write_fd, int size) {
 	int written_bytes = 0;

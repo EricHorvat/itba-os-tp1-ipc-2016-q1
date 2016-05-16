@@ -1,11 +1,11 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-typedef unsigned char bool;
+// typedef unsigned char bool;
 typedef unsigned char boolean;
 
-#define TRUE 1
-#define FALSE 0
+// #define TRUE 1
+// #define FALSE 0
 
 #define true 1
 #define false 0

@@ -71,12 +71,12 @@ mqd_t create_mq(void) {
 void read_mq(mqd_t mq, char* buff) {
 	ssize_t bytes_readd;
 	if ((bytes_readd = mq_receive(mq, buff, MSG_MAX_SIZE, NULL)) < 0) {
-		/*print error? exit?*/
+		exit(1);
 	}
 	buff[bytes_readd] = '\0';
 }
 
 void close_mq(mqd_t mq) {
-	mq_close(mq);            /*-1 = error, print error?*/
-	mq_unlink(MSQUEUE_NAME); /*-1 = error, print error?*/
+	mq_close(mq);
+	mq_unlink(MSQUEUE_NAME);
 }

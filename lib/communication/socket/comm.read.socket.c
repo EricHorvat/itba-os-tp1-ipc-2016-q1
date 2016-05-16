@@ -30,7 +30,7 @@ typedef struct {
 typedef struct {
 	int   fd;
 	char* fifo;
-	bool  success;
+	boolean  success;
 } comm_data_writer_ret_t;
 
 typedef void* (*pthread_func_t)(void* data);
@@ -41,7 +41,7 @@ void comm_listen(connection_t* conn, comm_error_t* error) {
 	struct sockaddr_in* serv_addr;
 
 	serv_addr = malloc(sizeof(struct sockaddr_in));
-	// memset(serv_addr,0,sizeof(struct sockaddr_in));
+	
 	serv_addr->sin_family      = AF_INET;
 	serv_addr->sin_addr.s_addr = INADDR_ANY;
 
@@ -98,7 +98,7 @@ void comm_accept(connection_t* conn, comm_error_t* error) {
 	INFO("at: %d", at);
 
 	clilen = sizeof(client_addr);
-	if ((fd = accept(at /*FEO*/, (struct sockaddr*)&client_addr, &clilen)) < 0) {
+	if ((fd = accept(at, (struct sockaddr*)&client_addr, &clilen)) < 0) {
 		ERROR("cant accept socket");
 		error->code = ERR_SOCKET_NOT_ACCEPTED;
 		error->msg  = "cant accepted socket";
@@ -132,31 +132,6 @@ void comm_accept(connection_t* conn, comm_error_t* error) {
 }
 
 char* comm_receive_data(connection_t* conn, comm_error_t* error) {
-
-	//char *request_fifo;
-	//size_t request_fifo_len = 0, read_bytes = 0;
-	//int fd;
-	// char *buffer;
-	// size_t read_bytes = 0;
-
-	// buffer = (char*)malloc(BUFFER_LENGTH);
-	// memset(buffer, ZERO, BUFFER_LENGTH);
-
-	// INFO("reading from %d", conn->res_fd);
-
-	// do {
-	// 	read(conn->res_fd, buffer+read_bytes, 1);
-	// } while (*(buffer+read_bytes++) != '\0');
-	// //close(fd);
-	// //
-	// INFO("read from %d", conn->res_fd);
-	// INFO("read [%s]", buffer);
-
-	// error->code = 0;
-	// error->msg= "OK";
-
-	// return buffer;
-	//
 
 	char * buffer, *boundary;
 	size_t read_bytes   = 0;
