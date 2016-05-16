@@ -9,13 +9,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-// https://gist.github.com/jbenet/1087739
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <file_utils.h>
 #include <utils.h>
 #include <comm.fifo.h>
+#include <file_utils.h>
 
 /**
 
@@ -43,10 +43,6 @@ typedef void* (*pthread_func_t)(void* data);
 **/
 
 static void *data_listener(void *);
-// static void *pthread_start_with_timeout(pthread_t thread, pthread_func_t func, void *data, unsigned int t);
-static void *data_writer(void *data);
-// static void write_one_by_one(int fd, void *data, size_t size);
-static int create_fifo(char *fifo);
 
 /**
 
@@ -54,72 +50,148 @@ static int create_fifo(char *fifo);
 
 **/
 
-/*pthread_mutex_t lock;
+pthread_mutex_t lock;
 bool mutex_init = no;
 
 static void *data_listener(void *data) {
 
-	comm_error_t *err;
-	//char *fifo;
-	//size_t fifo_len;
+	comm_error_t *error;
+	comm_thread_info_t *info;
+	char *buffer, *boundary;
 	size_t read_bytes = 0;
-	//int fd;
-	char* buffer;
+	size_t boundary_len = 0;
 
-	pthread_t self = pthread_self();
+	long int self;
 
-	buffer = (char*)malloc(2048);
-	memset(buffer, '\0', 2048);
+	self = (long int)pthread_self();
 
-	comm_thread_info_t *info = (comm_thread_info_t*)data;
 
-	err = NEW(comm_error_t);
+	info = (comm_thread_info_t*)data;
+
+	error = NEW(comm_error_t);
+
+	buffer = (char*)malloc(BUFFER_LENGTH);
+	memset(buffer, '\0', BUFFER_LENGTH);
+
+	boundary = (char*)malloc(BOUNDARY_LENGTH);
+	memset(boundary, '\0', BOUNDARY_LENGTH);
 
 	pthread_mutex_lock(&lock);
 
 	printf("[thread %ld] about to read %d\n", self, info->conn->res_fd);
-	//flock(fd, LOCK_SH);
+	// get boundary
+	do {
+		read(info->conn->res_fd, boundary+read_bytes, 1);
+	} while (*(boundary+read_bytes++) != '_');
+
+	read(info->conn->res_fd, boundary+read_bytes, 1);
+
+	boundary_len = read_bytes+1;
+
+	read_bytes = 0;
+
 	do {
 		read(info->conn->res_fd, buffer+read_bytes, 1);
-	} while (*(buffer+read_bytes++) != '\0');
-	//flock(fd, LOCK_UN);
+		if (*(buffer+read_bytes) == ZERO) {
+			read_bytes++;
+			read(info->conn->res_fd, buffer+read_bytes, 1);
+		}
+		read_bytes++;
+	} while (read_bytes <= boundary_len || strcmp(buffer+(read_bytes-boundary_len), boundary) != 0);
+
 	pthread_mutex_unlock(&lock);
-	//close(fd);
 
+	buffer[read_bytes-boundary_len] = '\0';
 
-	err->code = 0;
-	err->msg = "Operacion Exitosa";
+	free(boundary);
 
-	info->cb(err, info->conn, buffer);
+	error->code = NO_COMM_ERROR;
+	error->msg = "Receive Data Sucessful";
+
+	info->cb(error, info->conn, buffer);
 
 	pthread_exit(NULL);
 
 	return nil;
 
-}*/
+}
 
 void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *error) {
 
-	char *zero;
+	// char *zero;
+
+	// if (!error)
+	// 	error = NEW(comm_error_t);
+
+	// zero = (char*)malloc(1);
+	// zero[0] = ZERO;
+
+	// INFO("locking fd(%d)", conn->req_fd);
+	// flock(conn->req_fd, LOCK_EX);
+	// write_one_by_one(conn->req_fd, data, size);
+	// flock(conn->req_fd, LOCK_UN);
+	// INFO("unlocking fd(%d)", conn->req_fd);
+
+	// error->code = NO_COMM_ERROR;
+	// error->msg = "Todo OK";
+
+	char *boundary;
 
 	if (!error)
 		error = NEW(comm_error_t);
 
-	zero = (char*)malloc(1);
-	zero[0] = ZERO;
-
-	INFO("locking fd(%d)", conn->req_fd);
+	boundary = gen_boundary();
+	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
-	write_one_by_one(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
+	write_one_by_one_without_zero(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
-	INFO("unlocking fd(%d)", conn->req_fd);
-
-	error->code = NO_COMM_ERROR;
-	error->msg = "Todo OK";
+	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
 
 }
 
 void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_callback_t cb) {
+
+	int pthread_ret;
+	pthread_t listener;
+	comm_error_t *err;
+	comm_thread_info_t *thread_arg;
+	char *boundary;
+
+	boundary = gen_boundary();
+	INFO("locking fd(%d)", conn->req_fd);
+	flock(conn->req_fd, LOCK_EX);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
+	write_one_by_one_without_zero(conn->req_fd, data, size);
+	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
+	flock(conn->req_fd, LOCK_UN);
+	INFO("unlocking fd(%d)", conn->req_fd);
+
+	thread_arg = NEW(comm_thread_info_t);
+
+	// fill in thread arguments
+	thread_arg->cb = cb;
+	thread_arg->conn = conn;
+
+
+
+	if (!mutex_init) {
+		if (pthread_mutex_init(&lock, NULL) != 0) {
+        	printf("\n mutex init failed\n");
+        	err = NEW(comm_error_t);
+        	err->code = 3;
+        	err->msg = "mutex init failed";
+        	return cb(err, conn, null);
+        }
+        mutex_init = yes;
+    }
+
+	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
+		ERROR("pthread create returned %d", pthread_ret);
+	}
+
+
 /*
 	//char *request_fifo;
 	//size_t request_fifo_len = 0;

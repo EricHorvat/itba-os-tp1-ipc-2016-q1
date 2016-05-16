@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-// https://gist.github.com/jbenet/1087739
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
@@ -51,39 +50,60 @@ bool mutex_init = no;
 
 static void *data_listener(void *data) {
 
-	comm_error_t *err;
-	//char *fifo;
-	//size_t fifo_len;
-	size_t read_bytes = 0;
-	//int fd;
-	char* buffer;
+	comm_error_t *error;
 	comm_thread_info_t *info;
+	char *buffer, *boundary;
+	size_t read_bytes = 0;
+	size_t boundary_len = 0;
 
-	long int self = (long int)pthread_self();
+	long int self;
 
-	buffer = (char*)malloc(2048);
-	memset(buffer, '\0', 2048);
+	self = (long int)pthread_self();
+
 
 	info = (comm_thread_info_t*)data;
 
-	err = NEW(comm_error_t);
+	error = NEW(comm_error_t);
+
+	buffer = (char*)malloc(BUFFER_LENGTH);
+	memset(buffer, '\0', BUFFER_LENGTH);
+
+	boundary = (char*)malloc(BOUNDARY_LENGTH);
+	memset(boundary, '\0', BOUNDARY_LENGTH);
 
 	pthread_mutex_lock(&lock);
 
 	printf("[thread %ld] about to read %d\n", self, info->conn->res_fd);
-	//flock(fd, LOCK_SH);
+	// get boundary
+	do {
+		read(info->conn->res_fd, boundary+read_bytes, 1);
+	} while (*(boundary+read_bytes++) != '_');
+
+	read(info->conn->res_fd, boundary+read_bytes, 1);
+
+	boundary_len = read_bytes+1;
+
+	read_bytes = 0;
+
 	do {
 		read(info->conn->res_fd, buffer+read_bytes, 1);
-	} while (*(buffer+read_bytes++) != '\0');
-	//flock(fd, LOCK_UN);
+		if (*(buffer+read_bytes) == ZERO) {
+			read_bytes++;
+			read(info->conn->res_fd, buffer+read_bytes, 1);
+		}
+		read_bytes++;
+	} while (read_bytes <= boundary_len || strcmp(buffer+(read_bytes-boundary_len), boundary) != 0);
+
 	pthread_mutex_unlock(&lock);
-	//close(fd);
 
+	buffer[read_bytes-boundary_len] = '\0';
 
-	err->code = 0;
-	err->msg = "Operacion Exitosa";
+	free(boundary);
 
-	info->cb(err, info->conn, buffer);
+	error->code = NO_COMM_ERROR;
+	error->msg = "Receive Data Sucessful";
+
+	info->cb(error, info->conn, buffer);
 
 	pthread_exit(NULL);
 
@@ -106,6 +126,9 @@ void comm_send_data(void *data, size_t size, connection_t *conn, comm_error_t *e
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
 	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
+
+	error->code = NO_COMM_ERROR;
+	error->msg = "OK";
 	
 }
 
@@ -118,13 +141,13 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
 	char *boundary;
 
 	boundary = gen_boundary();
-	printf(ANSI_COLOR_CYAN"locking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
+	INFO("locking fd(%d)", conn->req_fd);
 	flock(conn->req_fd, LOCK_EX);
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	write_one_by_one_without_zero(conn->req_fd, data, size);
 	write_one_by_one_without_zero(conn->req_fd, boundary, strlen(boundary));
 	flock(conn->req_fd, LOCK_UN);
-	printf(ANSI_COLOR_CYAN"unlocking fd(%d)\n"ANSI_COLOR_RESET, conn->req_fd);
+	INFO("unlocking fd(%d)", conn->req_fd);
 
 	thread_arg = NEW(comm_thread_info_t);
 
@@ -146,7 +169,7 @@ void comm_send_data_async(void * data, size_t size, connection_t *conn, comm_cal
     }
 
 	if ( (pthread_ret = pthread_create(&listener, NULL, data_listener, (void*)thread_arg)) ) {
-		fprintf(stderr, ANSI_COLOR_RED"pthread create returned %d\n"ANSI_COLOR_RED, pthread_ret);
+		ERROR("pthread create returned %d\n", pthread_ret);
 	}
 
 }

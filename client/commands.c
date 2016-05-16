@@ -302,6 +302,34 @@ static int cmd_sendd(connection_t* conn, client_command_info_t* info, char** arg
 	return COMMAND_OK;
 }
 
+static void get_handler(comm_error_t* err, connection_t* conn, char* response);
+
+static void get_handler(comm_error_t* err, connection_t* conn, char* response) {
+
+	// printf("%s dice: %s\n", addr->url, response);
+
+	parse_result_t* result;
+
+	LOG("response async: (%s)\n", response);
+
+	if (err->code) {
+		printf(ANSI_COLOR_RED "server error(%d): %s\n" ANSI_COLOR_RESET, err->code, err->msg);
+		return;
+	}
+
+	result = parse_encoded((const char*)response);
+
+	if (strcmp(result->kind, "int") == 0) {
+		SUCCESS("server says: %d\n", result->data.i);
+	} else if (strcmp(result->kind, "double") == 0) {
+		SUCCESS("server says: %f\n", result->data.d);
+	} else if (strcmp(result->kind, "string") == 0) {
+		SUCCESS("server says: %s\n", result->data.str);
+	} else if (strcmp(result->kind, "command.post") == 0) {
+		SUCCESS("server says: %s\n", decode_to_raw_data(result->data.post_cmd->data));
+	}
+}
+
 static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv, int argc) {
 
 	command_get_t*  cmd;
@@ -338,27 +366,28 @@ static int cmd_get(connection_t* conn, client_command_info_t* info, char** argv,
 
 	cmd->path = argv[0];
 
-	send_cmd_get(cmd, conn, err);
+	send_cmd_get_async(cmd, conn, &get_handler);
 
-	if (err->code) {
-		ERROR("send failed code %d msg: %s", err->code, err->msg);
-		return err->code;
-	}
 
-	INFO("fetching");
-	presult = receive(conn, err);
-	INFO("fetched");
+	// if (err->code) {
+		// ERROR("send failed code %d msg: %s", err->code, err->msg);
+		// return err->code;
+	// }
 
-	if (err->code) {
-		ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
-		return err->code;
-	}
+	// INFO("fetching");
+	// presult = receive(conn, err);
+	// INFO("fetched");
 
-	SUCCESS("result of kind %s", presult->kind);
+	// if (err->code) {
+		// ERROR("receive failed err code: %d msg: %s", err->code, err->msg);
+		// return err->code;
+	// }
 
-	if (strcmp(presult->kind, "data") == 0) {
-		SUCCESS("response: %s", (char*)presult->data.data);
-	}
+	// SUCCESS("result of kind %s", presult->kind);
+
+	// if (strcmp(presult->kind, "data") == 0) {
+		// SUCCESS("response: %s", (char*)presult->data.data);
+	// }
 	return COMMAND_OK;
 }
 

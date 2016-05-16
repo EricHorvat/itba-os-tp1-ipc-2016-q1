@@ -145,25 +145,65 @@ char* comm_receive_data(connection_t *conn, comm_error_t *error) {
 	//char *request_fifo;
 	//size_t request_fifo_len = 0, read_bytes = 0;
 	//int fd;
-	char *buffer;
-	size_t read_bytes = 0;
+	// char *buffer;
+	// size_t read_bytes = 0;
 
+
+	// buffer = (char*)malloc(BUFFER_LENGTH);
+	// memset(buffer, ZERO, BUFFER_LENGTH);
+
+	// INFO("reading from %d", conn->res_fd);
+
+	// do {
+	// 	read(conn->res_fd, buffer+read_bytes, 1);
+	// } while (*(buffer+read_bytes++) != '\0');
+	// //close(fd);
+	// //
+	// INFO("read from %d", conn->res_fd);
+	// INFO("read [%s]", buffer);
+
+	// error->code = 0;
+	// error->msg= "OK";
+
+	// return buffer;
+	// 
+	
+	char *buffer, *boundary;
+	size_t read_bytes = 0;
+	size_t boundary_len = 0;
 
 	buffer = (char*)malloc(BUFFER_LENGTH);
-	memset(buffer, ZERO, BUFFER_LENGTH);
+	memset(buffer, '\0', BUFFER_LENGTH);
 
-	INFO("reading from %d", conn->res_fd);
+	boundary = (char*)malloc(BOUNDARY_LENGTH);
+	memset(boundary, '\0', BOUNDARY_LENGTH);
+
+	// get boundary
+	do {
+		read(conn->res_fd, boundary+read_bytes, 1);
+	} while (*(boundary+read_bytes++) != '_');
+
+	read(conn->res_fd, boundary+read_bytes, 1);
+
+	boundary_len = read_bytes+1;
+
+	read_bytes = 0;
 
 	do {
 		read(conn->res_fd, buffer+read_bytes, 1);
-	} while (*(buffer+read_bytes++) != '\0');
-	//close(fd);
-	//
-	INFO("read from %d", conn->res_fd);
-	INFO("read [%s]", buffer);
+		if (*(buffer+read_bytes) == ZERO) {
+			read_bytes++;
+			read(conn->res_fd, buffer+read_bytes, 1);
+		}
+		read_bytes++;
+	} while (read_bytes <= boundary_len || strcmp(buffer+(read_bytes-boundary_len), boundary) != 0);
 
-	error->code = 0;
-	error->msg= "OK";
+	buffer[read_bytes-boundary_len] = '\0';
+
+	free(boundary);
+
+	error->code = NO_COMM_ERROR;
+	error->msg = "Receive Data Sucessful";
 
 	return buffer;
 
