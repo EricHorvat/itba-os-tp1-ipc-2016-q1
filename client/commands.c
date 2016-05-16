@@ -707,7 +707,7 @@ static int cmd_help(connection_t* conn, client_command_info_t* info, char** argv
 
 	while (commands[i] != NULL) {
 		if (strcmp(commands[i]->name, argv[0]) == 0) {
-			printf("%s\n", commands[i]->info->correct_use);
+			printf("%s\n", commands[i]->info->help);
 		}
 		i++;
 	}
